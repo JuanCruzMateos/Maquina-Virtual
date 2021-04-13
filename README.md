@@ -1,2 +1,2 @@
-##Maquina Virtual - Arquitectura de Computadoras
+# Maquina Virtual - Arquitectura de Computadoras
 
