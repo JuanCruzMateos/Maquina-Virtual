@@ -10,4 +10,4 @@ otro:   cmp    [20], 100  ;compara
         mov     dx, 10
         sys     2       ;print [10] en decimal
         jmp     otro
-fin    stop
+fin:    stop
