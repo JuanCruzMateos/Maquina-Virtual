@@ -1,6 +1,16 @@
 #include "func_mv.h"
 
-// registros
+// registros:
+//  0 - DO
+//  5 - IP
+//  8 - CC
+//  9 - AC
+// 10 - AX
+// 11 - BX
+// 12 - CX
+// 13 - DX
+// 14 - EX
+// 15 - FX
 int registro[CANT_REG] = {0};
 // ram
 int ram[CANT_RAM] = {0};
@@ -109,7 +119,6 @@ estados setEstado(int cant_op, int tipo_a, int tipo_b) {
     return estado;
 }
 
-
 operacion decodificar_operacion(int instruccion_hex) {
     operacion op;
     int cant_op = cantidad_operandos(instruccion_hex);
@@ -123,19 +132,17 @@ operacion decodificar_operacion(int instruccion_hex) {
     return op;
 }
 
-
 void MOV(int *a, int *b) {
     *a = *b;
+    
 }
 
 void ADD(int *a, int *b) {
     *a += *b;
-    registro[8] = *a & 0x80000001;
 }
 
 void SUB(int *a, int *b) {
     *a -= *b;
-    registro[8] = *a & 0x80000001;
 }
 
 void SWAP(int *a, int *b) {
@@ -151,50 +158,42 @@ void MUL(int *a, int *b) {
 void DIV(int *a, int *b) {
     *a = *a / *b;
     registro[9] = *a % *b;
-    registro[8] = *a & 0x80000001;
 }
 
 void CMP(int *a, int *b) {
-    registro[8] = (*a - *b) & 0x80000001;
 }
 
 void SHL(int *a, int *b) {
     *a = *a << *b;
-    registro[8] = *a & 0x80000001;
 }
 
 void SHR(int *a, int *b) {
     *a = *a >> *b;
-    registro[8] = *a & 0x80000001;
 }
 
 void AND(int *a, int *b) {
     *a = *a & *b;
-    registro[8] = *a & 0x80000001;
 }
 
 void OR(int *a, int *b) {
     *a = *a | *b;
-    registro[8] = *a & 0x80000001;
 }
 
 void XOR(int *a, int *b) {
     *a = *a ^ *b;
-    registro[8] = *a & 0x80000001;
 }
 
-
 void SYS(int *a) {
-    if (*a == 1)
-        // scanf
-    else if (*a == 2)
-        // printf()
-    else
-        // breakpoint
+    // if (*a == 1)
+    //     // scanf
+    // else if (*a == 2)
+    //     // printf()
+    // else
+    //     // breakpoint
 }
 
 void JMP(int *a) {
-    registro[5] = *a;
+
 }
 
 void JZ(int *a) {
@@ -235,7 +234,6 @@ void RND(int *a) {
 
 void NOT(int *a) {
     *a = ~(*a);
-    registro[8] = *a & 0x80000001;
 }
 
 void STOP() {

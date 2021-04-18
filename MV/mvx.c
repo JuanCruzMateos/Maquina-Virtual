@@ -29,6 +29,7 @@ int main(int argc, char const *argv[]) {
     while (0 <= registro[5] && registro[5] < registro[0]) {
         op = decodificar_operacion(ram[registro[5]]);
         // printf("cod = %03X \ntipoA = %02X \ntipoB = %02X \nvalorA = %02X \nvalorB = %02X\n\n", op.codigo_op, op.tipo_a, op.tipo_b, op.valor_a, op.valor_b);
+        registro[5] += 2;
         switch (op.estado) {
             case CERO_OP:
                 STOP(); break;
@@ -39,16 +40,16 @@ int main(int argc, char const *argv[]) {
                 (*instruccion_dos_op[op.codigo_op])(&registro[op.tipo_a], &registro[op.tipo_b]);
                 break;
             case DOS_OP_REG_DIR:
-                (*instruccion_dos_op[op.codigo_op])(&registro[op.tipo_a], &ram[op.valor_b + registro[5]]);
+                (*instruccion_dos_op[op.codigo_op])(&registro[op.tipo_a], &ram[op.valor_b + registro[0]]);
                 break;
             case DOS_OP_DIR_IN:
-                (*instruccion_dos_op[op.codigo_op])(&ram[op.valor_a + registro[5]], &(op.valor_b));
+                (*instruccion_dos_op[op.codigo_op])(&ram[op.valor_a + registro[0]], &(op.valor_b));
                 break;
             case DOS_OP_DIR_REG:
-                (*instruccion_dos_op[op.codigo_op])(&ram[op.valor_a + registro[5]], &registro[op.tipo_b]);
+                (*instruccion_dos_op[op.codigo_op])(&ram[op.valor_a + registro[0]], &registro[op.tipo_b]);
                 break;
             case DOS_OP_DIR_DIR:
-                (*instruccion_dos_op[op.codigo_op])(&ram[op.valor_a + registro[5]], &ram[op.valor_b + registro[5]]);
+                (*instruccion_dos_op[op.codigo_op])(&ram[op.valor_a + registro[0]], &ram[op.valor_b + registro[0]]);
                 break;
             case UN_OP_IN:
                 (*instruccion_un_op[op.codigo_op & 0xF])(&op.tipo_a);
@@ -57,10 +58,9 @@ int main(int argc, char const *argv[]) {
                 (*instruccion_un_op[op.codigo_op & 0xF])(&registro[op.tipo_a]);
                 break;
             case UN_OP_DIR:
-                (*instruccion_un_op[op.codigo_op & 0xF])(&ram[op.valor_a + registro[5]]);
+                (*instruccion_un_op[op.codigo_op & 0xF])(&ram[op.valor_a + registro[0]]);
                 break;
         }
-        registro[5] += 2;
     }
     return 0;
 }
