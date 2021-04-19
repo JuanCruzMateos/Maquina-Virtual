@@ -1,7 +1,7 @@
 #include "func_mv.h"
 
 // registros:
-//  0 - DO
+//  0 - DS
 //  5 - IP
 //  8 - CC
 //  9 - AC
@@ -26,12 +26,12 @@ void load_ram(FILE *arch, int *mem, int *DS) {
     *DS = i;
 }
 
-void print_bin(int *ram, int DS) {
+void print_binary(int *ram, int DS) {
     int i = 0, num;
 
     while (i < DS) {
         printf(" [%04d] %02X %02X %02X %02X\n", i, (ram[i] >> 24) & 0xFF, (ram[i] >> 16) & 0xFF, (ram[i] >> 8) & 0xFF, ram[i] & 0xFF);
-        i += 2;
+        i += 1;
     }
 }
 
@@ -132,17 +132,25 @@ operacion decodificar_operacion(int instruccion_hex) {
     return op;
 }
 
+void modificar_CC(int resultado) {
+    // CC == registro[8]
+    int N = resultado & 0x80000000;
+    int Z = (resultado == 0) ? 0x1 : 0x0;
+    registro[8] = N | Z;
+}
+
 void MOV(int *a, int *b) {
     *a = *b;
-    
 }
 
 void ADD(int *a, int *b) {
     *a += *b;
+    modificar_CC(*a);
 }
 
 void SUB(int *a, int *b) {
     *a -= *b;
+    modificar_CC(*a);
 }
 
 void SWAP(int *a, int *b) {
@@ -153,87 +161,117 @@ void SWAP(int *a, int *b) {
 
 void MUL(int *a, int *b) {
     *a += *b;
+    modificar_CC(*a);
 }
 
 void DIV(int *a, int *b) {
     *a = *a / *b;
     registro[9] = *a % *b;
+    modificar_CC(*a);
 }
 
 void CMP(int *a, int *b) {
+    modificar_CC(*a - *b);
 }
 
 void SHL(int *a, int *b) {
     *a = *a << *b;
+    modificar_CC(*a);
 }
 
 void SHR(int *a, int *b) {
     *a = *a >> *b;
+    modificar_CC(*a);
 }
 
 void AND(int *a, int *b) {
     *a = *a & *b;
+    modificar_CC(*a);
 }
 
 void OR(int *a, int *b) {
     *a = *a | *b;
+    modificar_CC(*a);
 }
 
 void XOR(int *a, int *b) {
     *a = *a ^ *b;
+    modificar_CC(*a);
+}
+
+void sys_read() {
+
+}
+
+void sys_write() {
+    switch (registro[9]) {
+        
+    }
+}
+
+void sys_breakpoint() {
+
 }
 
 void SYS(int *a) {
-    // if (*a == 1)
-    //     // scanf
-    // else if (*a == 2)
-    //     // printf()
-    // else
-    //     // breakpoint
+    if (*a == 1)  // scanf
+        sys_read();
+    else if (*a == 2)  // printf
+        sys_write();
+    else  // breakpoint
+        sys_breakpoint();
 }
 
 void JMP(int *a) {
-
+    registro[5] = *a;
 }
 
-void JZ(int *a) {
-
-}
 
 void JP(int *a) {
-
+    if (registro[8] & 0x80000000 == 0)
+        registro[5] = *a;
 }
 
 void JN(int *a) {
+    if (registro[8] & 0x80000000)
+        registro[5]= *a;
+}
 
+void JZ(int *a) {
+    if (registro[8] & 0x1)
+        registro[5] = *a;
 }
 
 void JNZ(int *a) {
-
+    if (registro[8] & 0x1 == 0)
+        registro[5] = *a;
 }
 
 void JNP(int *a) {
-
+    // TODO
 }
 
 void JNN(int *a) {
-
-}
-
-void LDL(int *a) {
-
+    // TODO
 }
 
 void LDH(int *a) {
+    registro[9] = (registro[9] & 0x3FFFFFFF) | ((*a & 0x3) << 30);
+}
 
+void LDL(int *a) {
+    registro[9] = (registro[9] & 0xFFFFFFFC) | (*a & 0x3);
 }
 
 void RND(int *a) {
-
+    // Carga en el primer operando un número aleatorio entre 0 y el valor del segundo operando
+    // -> dos operandos ? 
+    *a = rand();
 }
 
 void NOT(int *a) {
     *a = ~(*a);
+    modificar_CC(*a);
 }
 
 void STOP() {

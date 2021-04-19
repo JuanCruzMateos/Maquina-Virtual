@@ -64,7 +64,6 @@ comentarios = {
 
 errores = {}
 
-
 def abrirAsmFile(nombreArchivo: str) -> list:
     """Devuelve una lista de str con las lineas del archivo"""
     # leo el programa en asm

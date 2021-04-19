@@ -1,58 +1,27 @@
 import sys
-import pathlib
-import utilidades as fn
+import utilidades_v3 as fn
 import numpy as np
-
-if __name__ == "__main__":
-    pass
-
+# path = "C:\\Users\\Usuario\\Documents\\13 - INGENIERIA INFORMATICA\\Arquitectura de computadoras\\MV\\"
 path = "/mnt/c/Users/mateo/Documents/Ingenieria/Arquitectura/Maquina Virtual/ASM/"
 
-try:
-    pathCompleto = path+sys.argv[1]
-except:
-    pathCompleto = path + "fibo.asm"
-    print("Error - falta nombre de arhivo")
+def main():
+    # path = ""
+    pathCorto = path+sys.argv[1]
+    pathParaGuardarCorto = path+sys.argv[2]
+    pathLargo = sys.argv[1]
+    pathParaGuardarLargo = sys.argv[2]
 
-# Abro el programa
-programaEnteroEnLineas = fn.abrirAsmFile(pathCompleto)
-# separo por lineas
-programaEnteroEnListas = fn.conviertoLineasEnListas(programaEnteroEnLineas)
-# quito lineas en blanco
-programaEnteroEnListasSinLineasBlanco = fn.eliminoLineasVacias(
-    programaEnteroEnListas)
-# borro comentarios de linea entera
-programaSinComentariosUnaLinea, nroLineas = fn.dropComentariosDeUnaLinea(
-    programaEnteroEnListasSinLineasBlanco)
-# quito rotulos y comentarios (estan almacenados en diccionarios, se accede por numero de linea)
-programaSinRotuloSinComentarios = fn.generoListaSinComentariosNiRotulos(
-    programaSinComentariosUnaLinea)
-# armo una estructura con toda la informacion que necesito antes de codificar
-programaFinal = fn.generoListaFinal(programaSinRotuloSinComentarios)
-
-print("Programa Final")
-for x in programaFinal:
-    if x[1] == None:
-        print("Error")
-    else:
-        print(x)
-print("numLinea - mnemonico - codigoMnemonico - cantidadOperandosNecesarios - valorOperandos - tipoDeOperandos - operadores originales")
+    try:
+        path1 = pathCorto
+        path2 = pathParaGuardarCorto
+        codigo = fn.ejecutoParser(path1, showText=True)
+        exito = fn.guardoArchivoBin(path2, codigo)
+    except:
+        path1 = pathLargo
+        path2 = pathParaGuardarLargo
+        codigo = fn.ejecutoParser(path1, showText=True)
+        exito = fn.guardoArchivoBin(path2, codigo)
 
 
-codigos = fn.generoCodigo(programaFinal)
-
-if codigos != None:
-    texto = fn.generoListasDeStrings(codigos, programaFinal)
-    for linea in texto:
-        print(linea)
-
-    numpyCod = np.array(codigos)
-
-    for x in numpyCod:
-        print(x)
-
-# esto es para grabar el arhivo. Por ahora lo comento
-filename = "fibo.bin"
-fileobj = open(filename, mode='wb')
-numpyCod.tofile(fileobj)
-fileobj.close
+if __name__ == "__main__":
+    main()

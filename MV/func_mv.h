@@ -28,18 +28,8 @@ typedef struct {
 } operacion;
 
 void load_ram(FILE *arch, int *mem, int *DS);
-void print_bin(int *ram, int DS);
+void print_binary(int *ram, int DS);
 operacion decodificar_operacion(int instruccion_hex);
-
-// borrar
-// int cantidad_operandos(int instrucccion_hex);
-// int codigo_operacion(int instruccion_hex, int cant_op);
-// int tipo_operando_a(int instruccion_hex, int cant_op);
-// int tipo_operando_b(int instruccion_hex, int cant_op);
-// int valor_operando_a(int instruccion_hex, int cant_op);
-// int valor_operando_b(int instruccion_hex, int cant_op);
-// estados setEstado(int cant_op, int tipo_a, int tipo_b);
-//
 
 void MOV(int *a, int *b);
 void ADD(int *a, int *b);
