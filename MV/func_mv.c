@@ -15,23 +15,24 @@ int registro[CANT_REG] = {0};
 // ram
 int ram[CANT_RAM] = {0};
 
-void (*instruccion_dos_op[]) (int *, int *) = {MOV,ADD,SUB,SWAP,MUL,DIV,CMP,SHL,SHR,AND,OR,XOR};
-void (*instruccion_un_op[]) (int *) = {SYS,JMP,JZ,JP,JN,JNZ,JNP,JNN,LDL,LDH,RND,NOT};
+void (*instruccion_dos_op[]) (int *, int *) = {MOV, ADD, SUB, SWAP, MUL, DIV, CMP, SHL, SHR, AND,  OR, XOR};
+void (*instruccion_un_op[]) (int *)         = {SYS, JMP,  JZ,   JP,  JN, JNZ, JNP, JNN, LDL, LDH, RND, NOT};
 
 void load_ram(FILE *arch, int *mem, int *DS) {
     int i = 0, x;
 
-    while (fread(&x, sizeof(int), 1, arch) == 1)
+    while (fread(&x, sizeof(int), 1, arch) == 1) {
         mem[i++] = x;
+    }
     *DS = i;
 }
 
 void print_binary(int *ram, int DS) {
-    int i = 0, num;
+    int i = 0;
 
     while (i < DS) {
         printf(" [%04d] %02X %02X %02X %02X\n", i, (ram[i] >> 24) & 0xFF, (ram[i] >> 16) & 0xFF, (ram[i] >> 8) & 0xFF, ram[i] & 0xFF);
-        i += 1;
+        i += 2;
     }
 }
 
@@ -84,7 +85,6 @@ int valor_operando_b(int instruccion_hex, int cant_op) {
     else
         return instruccion_hex & 0xFFF;
 }
-
 
 estados setEstado(int cant_op, int tipo_a, int tipo_b) {
     estados estado;
@@ -200,17 +200,32 @@ void XOR(int *a, int *b) {
 }
 
 void sys_read() {
-
+    // TODO
+    int has_prompt = (registro[10] & 0x800) == 0;
 }
 
 void sys_write() {
-    switch (registro[9]) {
-        
+    int has_prompt = (registro[10] & 0x800) == 0;
+    int has_end = (registro[10] & 0x100) == 0;
+    int formato = registro[10] & 0x1F;
+    int i;
+
+    for (i = registro[13]; i <= registro[12]; i++) {
+        if (has_prompt)
+            printf("[%04d] ", i);
+        switch (formato) {
+            case 1:  printf("%d", ram[i]); break;
+            case 4:  printf("%o", ram[i]); break;
+            case 8:  printf("%X", ram[i]); break;
+            case 16: printf("%c", ram[i] & 0xFF); break;
+        }
+        if (has_end)
+            printf("\n");
     }
 }
 
 void sys_breakpoint() {
-
+    // TODO
 }
 
 void SYS(int *a) {
@@ -228,7 +243,7 @@ void JMP(int *a) {
 
 
 void JP(int *a) {
-    if (registro[8] & 0x80000000 == 0)
+    if ((registro[8] & 0x80000000) == 0)
         registro[5] = *a;
 }
 
@@ -243,7 +258,7 @@ void JZ(int *a) {
 }
 
 void JNZ(int *a) {
-    if (registro[8] & 0x1 == 0)
+    if ((registro[8] & 0x1) == 0)
         registro[5] = *a;
 }
 
@@ -264,9 +279,10 @@ void LDL(int *a) {
 }
 
 void RND(int *a) {
+    // TODO: segunda parte
     // Carga en el primer operando un número aleatorio entre 0 y el valor del segundo operando
     // -> dos operandos ? 
-    *a = rand();
+    // *a = rand();
 }
 
 void NOT(int *a) {
@@ -276,4 +292,21 @@ void NOT(int *a) {
 
 void STOP() {
     registro[5] = -1;
+}
+
+
+void print_codigo(int inst_actual) {
+    system("cls");
+    printf("Codigo: ");
+
+}
+
+
+// print registros:
+void print_registros() {
+    printf("Registros:\n");
+    printf("| DS = %10d | %15s | %15s | %15s |\n", registro[0], " ", " ", " ");
+    printf("| %15s | IP = %10d | %15s | %15s |\n", " ", registro[5], " ", " ");
+    printf("| CC = %10d | AC = %10d | AX = %10d | BX = %10d |\n", registro[8], registro[9], registro[10], registro[11]);
+    printf("| CX = %10d | DX = %10d | EX = %10d | FX = %10d |\n", registro[12], registro[13], registro[14], registro[15]);
 }

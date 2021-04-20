@@ -30,6 +30,7 @@ typedef struct {
 void load_ram(FILE *arch, int *mem, int *DS);
 void print_binary(int *ram, int DS);
 operacion decodificar_operacion(int instruccion_hex);
+void print_registros();
 
 void MOV(int *a, int *b);
 void ADD(int *a, int *b);
