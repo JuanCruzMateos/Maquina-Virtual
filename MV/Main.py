@@ -1,5 +1,5 @@
 import sys
-import utilidades_v3 as fn
+import utilidades as fn
 import numpy as np
 # path = "C:\\Users\\Usuario\\Documents\\13 - INGENIERIA INFORMATICA\\Arquitectura de computadoras\\MV\\"
 path = "/mnt/c/Users/mateo/Documents/Ingenieria/Arquitectura/Maquina Virtual/ASM/"
