@@ -14,7 +14,8 @@ int main(int argc, char const *argv[]) {
     fclose(binfile);
     printf("RAM: \n");
     print_binary(ram, registro[0]);
-
+    
+    getchar();
     registro[5] = 0;
     // printf("reg[5] = %d, reg[0] = %d\n", registro[5], registro[0]);
     while (0 <= registro[5] && registro[5] < registro[0]) {
@@ -55,6 +56,6 @@ int main(int argc, char const *argv[]) {
         }
         // getchar();
     }
-    // print_registros();
+    print_registros();
     return 0;
 }

@@ -2,7 +2,7 @@ import re
 from pprint import pprint
 import numpy as np
 
-# mnem : [codigo, nro operandos]
+#       mnem : [codigo, nro operandos]
 hashmap = {'MOV': [0, 2],
            'ADD': [1, 2],
            'SUB': [2, 2],

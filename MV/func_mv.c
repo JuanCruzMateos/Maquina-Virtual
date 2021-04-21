@@ -70,21 +70,41 @@ int tipo_operando_b(int instruccion_hex, int cant_op) {
         return (instruccion_hex >> 24) & 0x3;
 }
 
+
+// VERIFICAR NEGATIVOS
+
+
 int valor_operando_a(int instruccion_hex, int cant_op) {
+    int valor;
+
     if (cant_op == 0)
         return -1;
-    else if (cant_op == 1)
-        return instruccion_hex & 0xFFFF;
-    else
-        return (instruccion_hex >> 12) & 0xFFF;
+    else {
+        if (cant_op == 1) {
+            valor = instruccion_hex & 0xFFFF; 
+            valor |= valor & 0x8000 ? 0xFFFF0000 : 0x0;
+        } else {
+            valor = (instruccion_hex >> 12) & 0xFFF;
+            valor |= valor & 0x800 ? 0xFFFFF000 : 0x0; 
+        }
+        return valor;
+    } 
 }
 
 int valor_operando_b(int instruccion_hex, int cant_op) {
+    int valor;
+
     if (cant_op == 0 || cant_op == 1)
         return -1;
-    else
-        return instruccion_hex & 0xFFF;
+    else {
+        valor = instruccion_hex & 0xFFF; 
+        valor |= valor & 0x800 ? 0xFFFFF000 : 0x0;
+        return valor;
+    }
 }
+
+// ---
+
 
 estados setEstado(int cant_op, int tipo_a, int tipo_b) {
     estados estado;
@@ -210,14 +230,15 @@ void sys_read() {
         if (has_prompt)
             printf("[%04d]:", registro[13]);
         fflush(stdin);
-        scanf(" %s", buffer);
+        gets(buffer);
         i = 0;
         j = registro[13] + registro[0];
-        while (buffer[i] != '\0' && j <= registro[12] + registro[0]) {
+        while (buffer[i] != '\n' && j <= registro[12] + registro[0]) {
             ram[j] = buffer[i];
             i += 1;
             j += 1;
         }
+        ram[j] = '\0';
     } else {
         for (i = registro[13]; i < registro[13] + registro[12]; i++) {
             if (has_prompt)
@@ -296,11 +317,13 @@ void JNZ(int *a) {
 }
 
 void JNP(int *a) {
-    // TODO
+    // TODO 
+    // COMO ??? 
 }
 
 void JNN(int *a) {
     // TODO
+    // COMO ??? 
 }
 
 void LDH(int *a) {
