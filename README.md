@@ -17,4 +17,8 @@ python Main.py Fibo.asm Fibo.bin
 * Para ejecutar el codigo poner lo siguiente (si el archivo .asm esta en otra carpeta del proyecto)
 python Main.py c:\\poner el path aca\\Fibo.asm c:\\poner el path aca\\Fibo.bin
 
+Para ejecutar MVX:
+* Compilar: `gcc -o mvx.exe mvx.c func_mv.c`
+* Ejecutar: `mvx.exe fibo.bin [-b] [-c] [-d]`
+
 
