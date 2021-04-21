@@ -32,7 +32,7 @@ void print_binary(int *ram, int DS) {
 
     while (i < DS) {
         printf(" [%04d] %02X %02X %02X %02X\n", i, (ram[i] >> 24) & 0xFF, (ram[i] >> 16) & 0xFF, (ram[i] >> 8) & 0xFF, ram[i] & 0xFF);
-        i += 2;
+        i += 1;
     }
 }
 
@@ -155,7 +155,7 @@ operacion decodificar_operacion(int instruccion_hex) {
 void modificar_CC(int resultado) {
     // CC == registro[8]
     int N = resultado & 0x80000000;
-    int Z = (resultado == 0) ? 0x1 : 0x0;
+    int Z = resultado == 0;
     registro[8] = N | Z;
 }
 

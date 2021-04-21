@@ -1,6 +1,7 @@
 import re
 from pprint import pprint
 import numpy as np
+import ctypes as C
 
 #       mnem : [codigo, nro operandos]
 hashmap = {'MOV': [0, 2],
@@ -271,7 +272,7 @@ def generoListasDeStrings(codigos, programaFull):
     texto = []
     megaTexto = ""
     for i in range(len(codigos)):
-        lineaEnHexa = "["+"{0:X}".format(programaFull[i][0]).zfill(4)+"]"
+        lineaEnHexa = "["+"{0:d}".format(programaFull[i][0]).zfill(4)+"]"
         codigoEnHexa = f"{(codigos[i] >> 24) & 0xFF:02X} {(codigos[i] >> 16) & 0xFF:02X} {(codigos[i] >> 8) & 0xFF:02X} {codigos[i] & 0xFF:02X} {' '*11}"
         if i in etiqueta.keys():
             lin = etiqueta[i]+":"
@@ -322,6 +323,7 @@ def ejecutoParser(pathCompleto, showText=False):
 def guardoArchivoBin(pathParaGuardar, codigo):
     if codigo != None:
         numpyCod = np.array(codigo)
+        numpyCod = numpyCod.astype(np.int32)
         filename = pathParaGuardar
         fileobj = open(filename, mode='wb')
         numpyCod.tofile(fileobj, format='%d', sep='')
