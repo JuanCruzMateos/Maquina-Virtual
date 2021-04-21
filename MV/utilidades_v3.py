@@ -191,8 +191,8 @@ def cambioBase(operando):
         baseOperando = base[operando[0]]
         # descarto el primer valor
         operandoAux = operando[1:]
-        # cuando son ASCII pueden tener una comilla mas
-        if not operandoAux.isnumeric():
+        # cuando son ASCII pueden tener una comilla mas -> baseOp != 16 ya que si es hex da true
+        if baseOperando != 16 and not operandoAux.isnumeric():
             operandoAux = operandoAux[:-1]
     # sino estan en la lista solo quedan dos opciones
     # opcion 1 --> que sea un valor decimal puro

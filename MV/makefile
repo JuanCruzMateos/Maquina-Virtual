@@ -1,11 +1,11 @@
-#make:
-#	gcc -g -Wall -Wconversion -Wtype-limits -pedantic -Werror -o mvx.exe mvx.c util.c
+# make:
+# 	gcc -g -Wall -Wconversion -Wtype-limits -pedantic -Werror -o mvx.exe mvx.c func_mv.c
 
 make:
 	gcc -o mvx.exe mvx.c func_mv.c
 
 run:
-	./mvx.exe ../ASM/fibo.bin
+	./mvx.exe ../ASM/read_ejemplo02.bin
 
 clean:
 	rm ./mvx.exe

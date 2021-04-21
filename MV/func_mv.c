@@ -200,8 +200,35 @@ void XOR(int *a, int *b) {
 }
 
 void sys_read() {
-    // TODO
     int has_prompt = (registro[10] & 0x800) == 0;
+    int formato  = registro[10] & 0xF;
+    int scan_char = registro[10] & 0x100;
+    char buffer[256];
+    int i, j;
+
+    if (scan_char) {
+        if (has_prompt)
+            printf("[%04d]:", registro[13]);
+        fflush(stdin);
+        scanf(" %s", buffer);
+        i = 0;
+        j = registro[13] + registro[0];
+        while (buffer[i] != '\0' && j <= registro[12] + registro[0]) {
+            ram[j] = buffer[i];
+            i += 1;
+            j += 1;
+        }
+    } else {
+        for (i = registro[13]; i < registro[13] + registro[12]; i++) {
+            if (has_prompt)
+                printf("[%04d]:", i);
+            switch (formato) {
+                case 1: scanf("%d", &ram[i + registro[0]]); break;
+                case 4: scanf("%o", &ram[i + registro[0]]); break;
+                case 8: scanf("%x", &ram[i + registro[0]]); break;
+            }
+        }
+    }
 }
 
 void sys_write() {
@@ -210,14 +237,20 @@ void sys_write() {
     int formato = registro[10] & 0x1F;
     int i;
 
-    for (i = registro[13]; i <= registro[12]; i++) {
+    for (i = registro[13]; i < + registro[13] + registro[12]; i++) {
         if (has_prompt)
-            printf("[%04d] ", i);
+            printf("[%04d]:", i);
         switch (formato) {
-            case 1:  printf("%d", ram[i]); break;
-            case 4:  printf("%o", ram[i]); break;
-            case 8:  printf("%X", ram[i]); break;
-            case 16: printf("%c", ram[i] & 0xFF); break;
+            case 1:  printf("%d", ram[i + registro[0]]); break;
+            case 4:  printf("@%o", ram[i + registro[0]]); break;
+            case 8:  printf("%%%X", ram[i + registro[0]]); break;
+            case 16: printf("%c", ram[i + registro[0]] & 0xFF); break;
+            default:
+                registro[10] & 0x10 ? printf("%c ", ram[i + registro[0]] & 0xFF) : printf(" ");
+                registro[10] & 0x08 ? printf("%%%X ", ram[i + registro[0]]) : printf(" ");
+                registro[10] & 0x04 ? printf("@%o ", ram[i + registro[0]]) : printf(" ");
+                registro[10] & 0x01 ? printf("%d ", ram[i + registro[0]]) : printf(" ");
+                break;
         }
         if (has_end)
             printf("\n");

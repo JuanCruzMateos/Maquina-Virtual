@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #define CANT_REG 16
 #define CANT_RAM 4096
 
