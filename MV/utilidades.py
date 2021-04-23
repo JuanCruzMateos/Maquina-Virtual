@@ -64,14 +64,15 @@ comentarios = {
     # nroLinea(int): comentario(str)
 }
 
+tipos_errores = ["Error sintaxis", "No se encuentra rotulo",
+                 "Cantidad de operandos erronea"]
+
 errores = {}
 
 def abrirAsmFile(nombreArchivo: str) -> list:
     """Devuelve una lista de str con las lineas del archivo"""
-    # leo el programa en asm
     f = open(nombreArchivo, "r")
     programa = f.read()
-    # genero una lista con las lineas del programa
     programaEnLineas = programa.split("\n")
     f.close()
     return programaEnLineas
@@ -79,11 +80,6 @@ def abrirAsmFile(nombreArchivo: str) -> list:
 
 def conviertoLineasEnListas(programaEnLineas: list) -> list:
     """Devuelve una lista de listas, cada una con mnem y op en str"""
-    # separo cada una de las lineas en listas
-    # esto elimina todos los espacios en blanco
-    # elimino las lineas en blanco
-    # elimino las lineas que son solo comentarios
-    # elimino comentarios y rotulos
     nroLinea = 0
     programaEnListas = []
     for lineas in programaEnLineas:
@@ -102,6 +98,32 @@ def quitarComas(linea: list) -> list:
     for i in range(len(linea)):
         if ',' in linea[i]:
             linea[i] = linea[i].replace(',', '')
+
+
+def generoListaFinal(programaEnListas):
+    """Devuelve una lista de tuplas con la linea decodificada"""
+    numLinea = 0
+    programaFinal = []
+    for lista in programaEnListas:
+        programaFinal.append(decodificoLinea(lista, numLinea))
+        numLinea += 1
+    return programaFinal
+
+
+def generoCodigo(programaFinal):
+    codigos = []
+    for linea in programaFinal:
+        numLinea, _, codigoMnemonico, cantidadOperandosNecesarios, valorOperandos, tipoDeOperandos, _ = linea
+        if numLinea in errores.keys() and errores[numLinea] != 1:
+            # error de mnemotico
+            if errores[numLinea] == 0:
+                codigo = 0xFFFFFFFF
+            elif errores[numLinea] == 2:
+                codigo = 0xEEEEEEEE
+        else:
+            codigo = generaValorCodificado(numLinea, codigoMnemonico, cantidadOperandosNecesarios, tipoDeOperandos, valorOperandos)
+        codigos.append(codigo)
+    return codigos
 
 
 def buscoRotuloYComentario(linea: list, nroLinea: int) -> list:
@@ -126,13 +148,12 @@ def buscoRotuloYComentario(linea: list, nroLinea: int) -> list:
     return linea
 
 
-def decodificoLinea(linea: list, numLinea: int):
+def decodificoLinea(linea: list, numLinea: int) -> tuple:
     # identificamos si el mnemonico existe
     mnemonico = linea[0].upper()
     if mnemonico not in hashmap:
-        errores[numLinea] = "Linea " + \
-            str(numLinea) + " con Error - mnemonico erroneo"
-        return numLinea, None, None, None, None, None, None, None
+        errores[numLinea] = 0
+        return numLinea, None, None, None, None, None, None
     else:
         # Si el mnemonico existe, obtengo su codigo
         codigoMnemonico = hashmap[mnemonico][0]
@@ -142,9 +163,8 @@ def decodificoLinea(linea: list, numLinea: int):
         cantidadOperandosEncontrados = len(linea)-1
         # verificamos que la cantidad de operandos coincide con los encontrados
         if cantidadOperandosEncontrados != cantidadOperandosNecesarios:
-            errores[numLinea] = "Linea " + \
-                str(numLinea) + " con Error - Cantidad de operandos incorrectos"
-            return numLinea, None, None, None, None, None, None, None
+            errores[numLinea] = 2
+            return numLinea, None, None, None, None, None, None
         else:
             # Si no hay error en la cantidad de parametros, paso a decodificarlos
             valorOperandos = []
@@ -153,22 +173,14 @@ def decodificoLinea(linea: list, numLinea: int):
             if cantidadOperandosNecesarios == 1 or cantidadOperandosNecesarios == 2:
                 operandos = linea[1:]
             for operando in operandos:
-                opTipo, opVal = devuelveTipoOperandoYValorDecimal(operando)
+                opTipo, opVal = devuelveTipoOperandoYValorDecimal(operando, numLinea)
                 valorOperandos.append(opVal)
                 tipoDeOperandos.append(opTipo)
             return numLinea, mnemonico, codigoMnemonico, cantidadOperandosNecesarios, valorOperandos, tipoDeOperandos, operandos
 
 
-def generoListaFinal(programaEnteroEnListas):
-    numLinea = 0
-    programaFinal = []
-    for lista in programaEnteroEnListas:
-        programaFinal.append(decodificoLinea(lista, numLinea))
-        numLinea += 1
-    return programaFinal
 
-
-def devuelveTipoOperandoYValorDecimal(operando):
+def devuelveTipoOperandoYValorDecimal(operando, nroLinea):
     # verificamos si el operando es un registro
     # devuelve tipo = 1 y valor del registro
     if operando.upper() in registros:
@@ -178,13 +190,13 @@ def devuelveTipoOperandoYValorDecimal(operando):
     if re.search("\\[", operando):
         ini = operando.index("[")
         fin = operando.index("]")
-        return 2, cambioBase(operando[ini+1:fin])
+        return 2, cambioBase(operando[ini+1:fin], nroLinea)
     # Sino, es un valor inmediato
     # Devuelve tipo = 0 y el valor a reemplazar
-    return 0, cambioBase(operando)
+    return 0, cambioBase(operando, nroLinea)
 
 
-def cambioBase(operando):
+def cambioBase(operando, nroLinea):
     # Si la primer posicion coincide con lo almacenados en bases
     # @, #, % y '
     if operando[0] in base:
@@ -212,17 +224,16 @@ def cambioBase(operando):
         if operando.lower() in saltos:
             valor = saltos[operando.lower()]
         else:
-            valor = None
+            valor = 0xFFF  # no se encuentra el rotulo -> reemplazo por valor
+            errores[nroLinea] = 1
     return valor
 
 
-def generaValorCodificado(codMnemonico, cantidadOperandos, tipoOperandos, operandos):
+def generaValorCodificado(nroLinea, codMnemonico, cantidadOperandos, tipoOperandos, operandos):
     if cantidadOperandos == 2:
-        codigo = operacion2Parametros(
-            codMnemonico, operandos[0], operandos[1], tipoOperandos[0], tipoOperandos[1])
+        codigo = operacion2Parametros(nroLinea, codMnemonico, operandos[0], operandos[1], tipoOperandos[0], tipoOperandos[1])
     elif cantidadOperandos == 1:
-        codigo = operacion1Parametro(
-            codMnemonico, operandos[0], tipoOperandos[0])
+        codigo = operacion1Parametro(nroLinea, codMnemonico, operandos[0], tipoOperandos[0])
     else:
         codigo = operacion0Parametros(codMnemonico)
     return codigo
@@ -230,8 +241,12 @@ def generaValorCodificado(codMnemonico, cantidadOperandos, tipoOperandos, operan
 
 # Errores de truncamiento -> print
 
-def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, tipoOperando2):
-    codigo = np.left_shift(codigoOperacion & 0x00F, 28, dtype=np.int64) # 0x0003
+def operacion2Parametros(nroLinea, codigoOperacion, operando1, operando2, tipoOperando1, tipoOperando2):
+    if operando1 & 0xFFF != operando1:
+        print("Warning... truncado de operando en linea " + str(nroLinea) + ".")
+    if operando2 & 0xFFF != operando2:
+        print("Warning... truncado de operando en linea " + str(nroLinea) + ".")
+    codigo = np.left_shift(codigoOperacion & 0x00F, 28, dtype=np.int64)  # 0x0003
     tipoA = np.left_shift(tipoOperando1, 26, dtype=np.int64)
     a = np.left_shift(operando1 & 0xFFF, 12, dtype=np.int64)
     tipoB = np.left_shift(tipoOperando2 & 0x003, 24, dtype=np.int64)
@@ -240,7 +255,9 @@ def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, t
     return codigoFull
 
 
-def operacion1Parametro(codigoOperacion, operando1, tipoOperando1):
+def operacion1Parametro(codigoOperacion, operando1, tipoOperando1, nroLinea):
+    if operando1 & 0xFFFF != operando1:
+        print("Warning... truncado de operando en linea " + str(nroLinea) + ".")
     unos = 15 << 28
     codigo = (codigoOperacion & 0x00F) << 24
     tipoA = tipoOperando1 << 22
@@ -256,18 +273,6 @@ def operacion0Parametros(codigoOperacion):
     return codigoFull
 
 
-def generoCodigo(programaFinal):
-    if errores == {}:  # si no hay errores
-        codigos = []
-        for linea in programaFinal:
-            codigo = generaValorCodificado(
-                linea[2], linea[3], linea[5], linea[4])
-            codigos.append(codigo)
-        return codigos
-    else:
-        return None
-
-
 def generoListasDeStrings(codigos, programaFull):
     texto = []
     megaTexto = ""
@@ -279,7 +284,7 @@ def generoListasDeStrings(codigos, programaFull):
         else:
             lin = ""
         lin = '{0: <8}'.format(lin)
-        mnemonico = programaFull[i][1]
+        mnemonico = programaFull[i][1] if programaFull[i][1] != None else "EEE"
         mnemonico = '{0: <8}'.format(mnemonico)
         # genero operadores
         if programaFull[i][3] == 2:
@@ -304,29 +309,29 @@ def generoListasDeStrings(codigos, programaFull):
     return texto, megaTexto
 
 
-def ejecutoParser(pathCompleto, showText=False):
-    # Abro el programa
-    programaEnteroEnLineas = abrirAsmFile(pathCompleto)
-    # separo por lineas
-    programaEnteroEnListas = conviertoLineasEnListas(programaEnteroEnLineas)
-    # genero programa con reemplazos de valores
-    programaDecodificado = generoListaFinal(programaEnteroEnListas)
-    # genero codigo
-    codigo = generoCodigo(programaDecodificado)
-    # genero texto
-    _, megaTexto = generoListasDeStrings(codigo, programaDecodificado)
-    if showText:
-        print(megaTexto)
-    return codigo
+# def ejecutoParser(pathCompleto, showText=False):
+#     # Abro el programa
+#     programaEnteroEnLineas = abrirAsmFile(pathCompleto)
+#     # separo por lineas
+#     programaEnteroEnListas = conviertoLineasEnListas(programaEnteroEnLineas)
+#     # genero programa con reemplazos de valores
+#     programaDecodificado = generoListaFinal(programaEnteroEnListas)
+#     # genero codigo
+#     codigo = generoCodigo(programaDecodificado)
+#     # genero texto
+#     _, megaTexto = generoListasDeStrings(codigo, programaDecodificado)
+#     if showText:
+#         print(megaTexto)
+#     return codigo
 
 
-def guardoArchivoBin(pathParaGuardar, codigo):
-    if codigo != None:
-        numpyCod = np.array(codigo)
-        numpyCod = numpyCod.astype(np.int32)
-        filename = pathParaGuardar
-        fileobj = open(filename, mode='wb')
-        numpyCod.tofile(fileobj, format='%d', sep='')
-        fileobj.close()
-        return True
-    return False
+# def guardoArchivoBin(pathParaGuardar, codigo):
+#     if codigo != None:
+#         numpyCod = np.array(codigo)
+#         numpyCod = numpyCod.astype(np.int32)
+#         filename = pathParaGuardar
+#         fileobj = open(filename, mode='wb')
+#         numpyCod.tofile(fileobj)
+#         fileobj.close()
+#         return True
+#     return False

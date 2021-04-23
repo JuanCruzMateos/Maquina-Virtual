@@ -1,26 +1,44 @@
 import sys
-import utilidades as fn
 import numpy as np
-# path = "C:\\Users\\Usuario\\Documents\\13 - INGENIERIA INFORMATICA\\Arquitectura de computadoras\\MV\\"
-path = "/mnt/c/Users/mateo/Documents/Ingenieria/Arquitectura/Maquina Virtual/ASM/"
+import utilidades as fn
+
 
 def main():
-    # path = ""
-    pathCorto = path+sys.argv[1]
-    pathParaGuardarCorto = path+sys.argv[2]
-    pathLargo = sys.argv[1]
-    pathParaGuardarLargo = sys.argv[2]
+    salidaPorPantalla = True
 
-    try:
-        path1 = pathCorto
-        path2 = pathParaGuardarCorto
-        codigo = fn.ejecutoParser(path1, showText=True)
-        exito = fn.guardoArchivoBin(path2, codigo)
-    except:
-        path1 = pathLargo
-        path2 = pathParaGuardarLargo
-        codigo = fn.ejecutoParser(path1, showText=True)
-        exito = fn.guardoArchivoBin(path2, codigo)
+    if len(sys.argv) < 3:
+        print("ERROR: falta especificar nombre de archivo.")
+        return None
+    elif len(sys.argv) == 4:
+        if sys.argv[-1] == "-o":
+            salidaPorPantalla = False
+        else:
+            print("ERROR: flag invalido. Solo [-o] es sopotado.")
+            return None
+    
+    pathCompleto = sys.argv[1]
+    pathParaGuardar = sys.argv[2]
+
+    # Abro el programa
+    programaEnteroEnLineas = fn.abrirAsmFile(pathCompleto)
+    # separo por lineas
+    programaEnteroEnListas = fn.conviertoLineasEnListas(programaEnteroEnLineas)
+    # genero programa con reemplazos de valores
+    programaDecodificado = fn.generoListaFinal(programaEnteroEnListas)
+    # genero codigo
+    codigo = fn.generoCodigo(programaDecodificado)
+
+    if salidaPorPantalla:
+        _, megaTexto = fn.generoListasDeStrings(codigo, programaDecodificado)
+        print(megaTexto)
+
+    if not fn.errores:
+        numpyCod = np.array(codigo)
+        numpyCod = numpyCod.astype(np.int32)
+        filename = pathParaGuardar
+        fileobj = open(filename, mode='wb')
+        numpyCod.tofile(fileobj)
+        fileobj.close()
 
 
 if __name__ == "__main__":
