@@ -1,7 +1,6 @@
 import re
 from pprint import pprint
 import numpy as np
-import ctypes as C
 
 #       mnem : [codigo, nro operandos]
 hashmap = {'MOV': [0, 2],
@@ -113,15 +112,15 @@ def generoListaFinal(programaEnListas):
 def generoCodigo(programaFinal):
     codigos = []
     for linea in programaFinal:
-        numLinea, _, codigoMnemonico, cantidadOperandosNecesarios, valorOperandos, tipoDeOperandos, _ = linea
+        numLinea = linea[0]
         if numLinea in errores.keys() and errores[numLinea] != 1:
             # error de mnemotico
             if errores[numLinea] == 0:
                 codigo = 0xFFFFFFFF
-            elif errores[numLinea] == 2:
+            else:
                 codigo = 0xEEEEEEEE
         else:
-            codigo = generaValorCodificado(numLinea, codigoMnemonico, cantidadOperandosNecesarios, tipoDeOperandos, valorOperandos)
+            codigo = generaValorCodificado(linea[2], linea[3], linea[5], linea[4])
         codigos.append(codigo)
     return codigos
 
@@ -153,7 +152,7 @@ def decodificoLinea(linea: list, numLinea: int) -> tuple:
     mnemonico = linea[0].upper()
     if mnemonico not in hashmap:
         errores[numLinea] = 0
-        return numLinea, None, None, None, None, None, None
+        return numLinea, None, None, None, None, None, None, None
     else:
         # Si el mnemonico existe, obtengo su codigo
         codigoMnemonico = hashmap[mnemonico][0]
@@ -164,7 +163,7 @@ def decodificoLinea(linea: list, numLinea: int) -> tuple:
         # verificamos que la cantidad de operandos coincide con los encontrados
         if cantidadOperandosEncontrados != cantidadOperandosNecesarios:
             errores[numLinea] = 2
-            return numLinea, None, None, None, None, None, None
+            return numLinea, None, None, None, None, None, None, None
         else:
             # Si no hay error en la cantidad de parametros, paso a decodificarlos
             valorOperandos = []
@@ -173,14 +172,14 @@ def decodificoLinea(linea: list, numLinea: int) -> tuple:
             if cantidadOperandosNecesarios == 1 or cantidadOperandosNecesarios == 2:
                 operandos = linea[1:]
             for operando in operandos:
-                opTipo, opVal = devuelveTipoOperandoYValorDecimal(operando, numLinea)
+                opTipo, opVal = devuelveTipoOperandoYValorDecimal(operando)
                 valorOperandos.append(opVal)
                 tipoDeOperandos.append(opTipo)
             return numLinea, mnemonico, codigoMnemonico, cantidadOperandosNecesarios, valorOperandos, tipoDeOperandos, operandos
 
 
 
-def devuelveTipoOperandoYValorDecimal(operando, nroLinea):
+def devuelveTipoOperandoYValorDecimal(operando):
     # verificamos si el operando es un registro
     # devuelve tipo = 1 y valor del registro
     if operando.upper() in registros:
@@ -190,13 +189,13 @@ def devuelveTipoOperandoYValorDecimal(operando, nroLinea):
     if re.search("\\[", operando):
         ini = operando.index("[")
         fin = operando.index("]")
-        return 2, cambioBase(operando[ini+1:fin], nroLinea)
+        return 2, cambioBase(operando[ini+1:fin])
     # Sino, es un valor inmediato
     # Devuelve tipo = 0 y el valor a reemplazar
-    return 0, cambioBase(operando, nroLinea)
+    return 0, cambioBase(operando)
 
 
-def cambioBase(operando, nroLinea):
+def cambioBase(operando):
     # Si la primer posicion coincide con lo almacenados en bases
     # @, #, % y '
     if operando[0] in base:
@@ -215,7 +214,7 @@ def cambioBase(operando, nroLinea):
     # opcion 2 --> que sea una etiqueta
     else:
         baseOperando = 500  # es una etiqueta
-    if (baseOperando != 500):
+    if baseOperando != 500:
         if baseOperando == "ASCII":
             valor = ord(operandoAux)
         else:
@@ -225,15 +224,16 @@ def cambioBase(operando, nroLinea):
             valor = saltos[operando.lower()]
         else:
             valor = 0xFFF  # no se encuentra el rotulo -> reemplazo por valor
-            errores[nroLinea] = 1
+            # errores[nroLinea] = 1
     return valor
 
 
-def generaValorCodificado(nroLinea, codMnemonico, cantidadOperandos, tipoOperandos, operandos):
+def generaValorCodificado(codMnemonico, cantidadOperandos, tipoOperandos, operandos):
     if cantidadOperandos == 2:
-        codigo = operacion2Parametros(nroLinea, codMnemonico, operandos[0], operandos[1], tipoOperandos[0], tipoOperandos[1])
+        codigo = operacion2Parametros(
+            codMnemonico, operandos[0], operandos[1], tipoOperandos[0], tipoOperandos[1])
     elif cantidadOperandos == 1:
-        codigo = operacion1Parametro(nroLinea, codMnemonico, operandos[0], tipoOperandos[0])
+        codigo = operacion1Parametro(codMnemonico, operandos[0], tipoOperandos[0])
     else:
         codigo = operacion0Parametros(codMnemonico)
     return codigo
@@ -241,11 +241,11 @@ def generaValorCodificado(nroLinea, codMnemonico, cantidadOperandos, tipoOperand
 
 # Errores de truncamiento -> print
 
-def operacion2Parametros(nroLinea, codigoOperacion, operando1, operando2, tipoOperando1, tipoOperando2):
+def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, tipoOperando2):
     if operando1 & 0xFFF != operando1:
-        print("Warning... truncado de operando en linea " + str(nroLinea + 1) + ".")
+        print("Warning... truncado de operando en linea ") #+ str(nroLinea + 1) + ".")
     if operando2 & 0xFFF != operando2:
-        print("Warning... truncado de operando en linea " + str(nroLinea + 1) + ".")
+        print("Warning... truncado de operando en linea ")# + str(nroLinea + 1) + ".")
     codigo = np.left_shift(codigoOperacion & 0x00F, 28, dtype=np.int64)
     tipoA = np.left_shift(tipoOperando1, 26, dtype=np.int64)
     a = np.left_shift(operando1 & 0xFFF, 12, dtype=np.int64)
@@ -255,9 +255,9 @@ def operacion2Parametros(nroLinea, codigoOperacion, operando1, operando2, tipoOp
     return codigoFull
 
 
-def operacion1Parametro(codigoOperacion, operando1, tipoOperando1, nroLinea):
+def operacion1Parametro(codigoOperacion, operando1, tipoOperando1):
     if operando1 & 0xFFFF != operando1:
-        print("Warning... truncado de operando en linea " + str(nroLinea + 1) + ".")
+        print("Warning... truncado de operando en linea ")# + str(nroLinea + 1) + ".")
     unos = 15 << 28
     codigo = (codigoOperacion & 0x00F) << 24
     tipoA = tipoOperando1 << 22

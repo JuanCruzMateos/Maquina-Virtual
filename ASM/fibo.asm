@@ -1,5 +1,5 @@
         mov    [10] ,0       ;inicializo variables
-        mov    [20], %FFF1   
+        mov    [20],   1   
 otro:   cmp    [20], 100         ;compara
         jp     fin        ;salta si llego a 100 o mas
         swap   [10], [20]

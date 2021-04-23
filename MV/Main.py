@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import utilidades as fn
+from pprint import pprint
 
 
 def main():
@@ -21,22 +22,30 @@ def main():
 
     # Abro el programa
     # obtengo una lista de str con cada linea del archivo
-    programaEnteroEnLineas = fn.abrirAsmFile(pathCompleto)
+    lista_de_lineas_arch = fn.abrirAsmFile(pathCompleto)
+    # pprint(lista_de_lineas_arch)
+    # print()
 
     # separo por lineas
     # obtengo una lista de str solo con mnemotico y operandos
-    programaEnteroEnListas = fn.conviertoLineasEnListas(programaEnteroEnLineas)
+    lista_instr_operandos = fn.conviertoLineasEnListas(lista_de_lineas_arch)
+    # pprint(lista_instr_operandos)
+    # print()
 
     # genero programa con reemplazos de valores
     # obtengo una lista de tuplas con 
-    programaDecodificado = fn.generoListaFinal(programaEnteroEnListas)
-    
+    programaDecodificado = fn.generoListaFinal(lista_instr_operandos)
+    # pprint(programaDecodificado)
+    # print()
+
     # genero codigo
     codigo = fn.generoCodigo(programaDecodificado)
+    # pprint(codigo)
+    # print()
 
     if salidaPorPantalla:
         _, megaTexto = fn.generoListasDeStrings(codigo, programaDecodificado)
-        print("\n" + megaTexto)
+        print(megaTexto)
 
     if not fn.errores:
         numpyCod = np.array(codigo)
