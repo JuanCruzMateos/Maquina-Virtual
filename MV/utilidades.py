@@ -64,8 +64,8 @@ comentarios = {
     # nroLinea(int): comentario(str)
 }
 
-tipos_errores = ["Error sintaxis", "No se encuentra rotulo",
-                 "Cantidad de operandos erronea"]
+tipos_errores = ["Error sintaxis.", "No se encuentra rotulo.",
+                 "Cantidad de operandos erronea."]
 
 errores = {}
 
@@ -243,9 +243,9 @@ def generaValorCodificado(nroLinea, codMnemonico, cantidadOperandos, tipoOperand
 
 def operacion2Parametros(nroLinea, codigoOperacion, operando1, operando2, tipoOperando1, tipoOperando2):
     if operando1 & 0xFFF != operando1:
-        print("Warning... truncado de operando en linea " + str(nroLinea) + ".")
+        print("Warning... truncado de operando en linea " + str(nroLinea + 1) + ".")
     if operando2 & 0xFFF != operando2:
-        print("Warning... truncado de operando en linea " + str(nroLinea) + ".")
+        print("Warning... truncado de operando en linea " + str(nroLinea + 1) + ".")
     codigo = np.left_shift(codigoOperacion & 0x00F, 28, dtype=np.int64)
     tipoA = np.left_shift(tipoOperando1, 26, dtype=np.int64)
     a = np.left_shift(operando1 & 0xFFF, 12, dtype=np.int64)
@@ -257,7 +257,7 @@ def operacion2Parametros(nroLinea, codigoOperacion, operando1, operando2, tipoOp
 
 def operacion1Parametro(codigoOperacion, operando1, tipoOperando1, nroLinea):
     if operando1 & 0xFFFF != operando1:
-        print("Warning... truncado de operando en linea " + str(nroLinea) + ".")
+        print("Warning... truncado de operando en linea " + str(nroLinea + 1) + ".")
     unos = 15 << 28
     codigo = (codigoOperacion & 0x00F) << 24
     tipoA = tipoOperando1 << 22
@@ -284,14 +284,14 @@ def generoListasDeStrings(codigos, programaFull):
         else:
             lin = ""
         lin = '{0: <8}'.format(lin)
-        mnemonico = programaFull[i][1] if programaFull[i][1] != None else "EEE"
+        mnemonico = programaFull[i][1] if programaFull[i][1] != None else "---"
         mnemonico = '{0: <8}'.format(mnemonico)
         # genero operadores
         if programaFull[i][3] == 2:
             op1 = programaFull[i][6][0]
             op2 = programaFull[i][6][1]
-            op1 = '{0: <6}'.format(op1)
-            op2 = '{0: <6}'.format(op2)
+            op1 = '{0: >6}'.format(op1)
+            op2 = '{0: >6}'.format(op2)
             ope = op1+", " + op2
         elif programaFull[i][3] == 1:
             ope = programaFull[i][6][0]

@@ -20,17 +20,23 @@ def main():
     pathParaGuardar = sys.argv[2]
 
     # Abro el programa
+    # obtengo una lista de str con cada linea del archivo
     programaEnteroEnLineas = fn.abrirAsmFile(pathCompleto)
+
     # separo por lineas
+    # obtengo una lista de str solo con mnemotico y operandos
     programaEnteroEnListas = fn.conviertoLineasEnListas(programaEnteroEnLineas)
+
     # genero programa con reemplazos de valores
+    # obtengo una lista de tuplas con 
     programaDecodificado = fn.generoListaFinal(programaEnteroEnListas)
+    
     # genero codigo
     codigo = fn.generoCodigo(programaDecodificado)
 
     if salidaPorPantalla:
         _, megaTexto = fn.generoListasDeStrings(codigo, programaDecodificado)
-        print(megaTexto)
+        print("\n" + megaTexto)
 
     if not fn.errores:
         numpyCod = np.array(codigo)
