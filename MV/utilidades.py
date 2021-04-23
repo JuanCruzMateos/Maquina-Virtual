@@ -246,7 +246,7 @@ def operacion2Parametros(nroLinea, codigoOperacion, operando1, operando2, tipoOp
         print("Warning... truncado de operando en linea " + str(nroLinea) + ".")
     if operando2 & 0xFFF != operando2:
         print("Warning... truncado de operando en linea " + str(nroLinea) + ".")
-    codigo = np.left_shift(codigoOperacion & 0x00F, 28, dtype=np.int64)  # 0x0003
+    codigo = np.left_shift(codigoOperacion & 0x00F, 28, dtype=np.int64)
     tipoA = np.left_shift(tipoOperando1, 26, dtype=np.int64)
     a = np.left_shift(operando1 & 0xFFF, 12, dtype=np.int64)
     tipoB = np.left_shift(tipoOperando2 & 0x003, 24, dtype=np.int64)

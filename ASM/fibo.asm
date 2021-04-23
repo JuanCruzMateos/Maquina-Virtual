@@ -1,4 +1,4 @@
-        mov    [10], 0       ;inicializo variables
+        moe    [10], 0       ;inicializo variables
         mov    [20], %FFF1   
 otro:   cmp    [20], 100         ;compara
         jp     fin        ;salta si llego a 100 o mas

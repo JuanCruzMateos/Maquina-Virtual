@@ -39,6 +39,9 @@ def main():
         fileobj = open(filename, mode='wb')
         numpyCod.tofile(fileobj)
         fileobj.close()
+    else:
+        for nroLinea, tipoError in fn.errores.items():
+            print(f"Linea {nroLinea}: {fn.tipos_errores[tipoError]}")
 
 
 if __name__ == "__main__":
