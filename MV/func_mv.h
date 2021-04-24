@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define CANT_REG 16
 #define CANT_RAM 4096
@@ -12,6 +13,13 @@ extern int ram[CANT_RAM];
 // arreglos de punteos a funciones -> instrucciones
 extern void (*instruccion_dos_op[]) (int *, int *);
 extern void (*instruccion_un_op[]) (int *);
+
+// 
+typedef struct {
+    int b, c, d;
+} flags_t;
+
+extern flags_t flags;
 
 typedef enum { DOS_OP_REG_IN, DOS_OP_REG_REG, DOS_OP_REG_DIR,
                DOS_OP_DIR_IN, DOS_OP_DIR_REG, DOS_OP_DIR_DIR,

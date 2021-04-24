@@ -10,5 +10,6 @@ otro:   cmp    [20], 100         ;compara
             mov     cx,1
         mov     dx    ,10
         sys     2            ;print [10] en decimal
+        sys     %F
         jmp     otro
 fin:    stop

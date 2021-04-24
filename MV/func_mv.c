@@ -15,8 +15,15 @@ int registro[CANT_REG] = {0};
 // ram
 int ram[CANT_RAM] = {0};
 
+flags_t flags;
+
 void (*instruccion_dos_op[]) (int *, int *) = {MOV, ADD, SUB, SWAP, MUL, DIV, CMP, SHL, SHR, AND,  OR, XOR};
 void (*instruccion_un_op[]) (int *)         = {SYS, JMP,  JZ,   JP,  JN, JNZ, JNP, JNN, LDL, LDH, RND, NOT};
+
+char *ops[][12] = {{"MOV", "ADD", "SUB", "SWAP", "MUL", "DIV", "CMP", "SHL", "SHR", "AND", "OR", "XOR"},
+                   {"SYS", "JMP",  "JZ",   "JP",  "JN", "JNZ", "JNP", "JNN", "LDL", "LDH","RND", "NOT"},
+                   {"STOP",  "",      "",     "",    "",    "",    "",    "",    "",    "",   "",   ""}};
+
 
 void load_ram(FILE *arch, int *mem, int *DS) {
     int i = 0, x;
@@ -225,6 +232,8 @@ void XOR(int *a, int *b) {
     modificar_CC(*a);
 }
 
+// REVISAR IMPLEMENTACION DE SCAN_CHAR !!!
+
 void sys_read() {
     int has_prompt = (registro[10] & 0x800) == 0;
     int formato  = registro[10] & 0xF;
@@ -284,9 +293,59 @@ void sys_write() {
     }
 }
 
-void sys_breakpoint() {
-    // TODO
+
+void disassembler() {
+    int inicio = (registro[5] - 5 >= 0) ? registro[5] - 5 : 0;
+    int fin = (registro[5] + 5 < registro[0]) ? registro[5] + 5 : registro[0];
+    operacion op;
+    char linea[8];
+    char hex[12];
+    char assembly[50];
+    int i;
+
+    for (i = inicio; i < fin; i++) {
+        op = decodificar_operacion(ram[i]);
+        i == registro[5] ? sprintf(linea, ">[%04d]", i) : sprintf(linea, " [%04d]", i);
+        sprintf(hex, "%02X %02X %02X %02X", (ram[i] >> 24) & 0xFF, (ram[i] >> 16) & 0xFF, (ram[i] >> 8) & 0xFF, ram[i] & 0xFF);
+
+        
+        printf("%s %s\n", linea, hex);
+    }
+    print_registros();
 }
+
+
+void sys_breakpoint() {
+    static int saltear_bp = 0;
+    char buffer[30];
+    char *nums;
+    int i, n1, n2;
+
+    if (!saltear_bp) {     
+        // if (flags.c)
+        //     system("cls");
+        if (flags.d)
+            disassembler();
+        if (flags.b) {
+            printf("[%04d] cmd: ", registro[5] - 1);
+            fgets(buffer, 15, stdin);
+            if (buffer[0] == '\n')
+                saltear_bp = 1;
+            else if (buffer[0] != 'p') {
+                nums = strtok(buffer, " ");
+                n1 = atoi(nums);
+                nums = strtok (NULL, " ");
+                if (nums != NULL)
+                    n2 = atoi(nums);
+                else
+                    n2 = n1;
+                for (i = n1; i <= n2; i++)
+                    printf("[%04d]: %04X %04X  %15d\n", i, (ram[i] & 0xFFFF0000) >> 16, ram[i] & 0xFFFF, ram[i]);
+            }
+        }
+    }
+}
+
 
 void SYS(int *a) {
     if (*a == 1)  // scanf

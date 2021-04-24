@@ -6,6 +6,20 @@
 int main(int argc, char const *argv[]) {
     FILE *binfile;
     operacion op;
+    int i;
+
+    flags.b = flags.c = flags.d = 0;
+    if (argc > 2) {
+        for (i = 2; i < argc; i++) {
+            if (strcmp(argv[i], "-b") == 0)
+                flags.b = 1;
+            else if (strcmp(argv[i], "-c") == 0)
+                flags.c = 1;
+            else if (strcmp(argv[i], "-d") == 0)
+                flags.d = 1;
+        }
+    }
+
 
     binfile = fopen(argv[1], "rb");
     if (binfile == NULL)
@@ -16,7 +30,8 @@ int main(int argc, char const *argv[]) {
     // print_binary(ram, registro[0]);
     
     registro[5] = 0;
-    // printf("reg[5] = %d, reg[0] = %d\n", registro[5], registro[0]);
+    // if (flags.c)
+        // system("cls");
     while (0 <= registro[5] && registro[5] < registro[0]) {
         op = decodificar_operacion(ram[registro[5]]);
         // printf("instruccion: %02X %02X %02X %02X\n", (ram[registro[5]] >> 24) & 0xFF, (ram[registro[5]] >> 16) & 0xFF, (ram[registro[5]] >> 8) & 0xFF, ram[registro[5]] & 0xFF);
