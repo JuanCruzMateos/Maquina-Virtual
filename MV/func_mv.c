@@ -307,8 +307,7 @@ void disassembler() {
         op = decodificar_operacion(ram[i]);
         i == registro[5] ? sprintf(linea, ">[%04d]", i) : sprintf(linea, " [%04d]", i);
         sprintf(hex, "%02X %02X %02X %02X", (ram[i] >> 24) & 0xFF, (ram[i] >> 16) & 0xFF, (ram[i] >> 8) & 0xFF, ram[i] & 0xFF);
-
-        
+        // TODO
         printf("%s %s\n", linea, hex);
     }
     print_registros();

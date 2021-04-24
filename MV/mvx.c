@@ -30,8 +30,10 @@ int main(int argc, char const *argv[]) {
     // print_binary(ram, registro[0]);
     
     registro[5] = 0;
-    // if (flags.c)
-        // system("cls");
+    if (flags.c)
+        system("cls");
+    if (flags.d)
+        disassembler();
     while (0 <= registro[5] && registro[5] < registro[0]) {
         op = decodificar_operacion(ram[registro[5]]);
         // printf("instruccion: %02X %02X %02X %02X\n", (ram[registro[5]] >> 24) & 0xFF, (ram[registro[5]] >> 16) & 0xFF, (ram[registro[5]] >> 8) & 0xFF, ram[registro[5]] & 0xFF);
