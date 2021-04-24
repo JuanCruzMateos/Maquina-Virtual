@@ -67,8 +67,6 @@ tipos_errores = ["Error sintaxis.", "No se encuentra rotulo.",
 
 errores = {}
 
-warnings = []
-
 def abrirAsmFile(nombreArchivo: str) -> list:
     """Devuelve una lista de str con las lineas del archivo"""
     f = open(nombreArchivo, "r")
@@ -306,5 +304,4 @@ def generoListasDeStrings(codigos, programaFull):
         megaTexto += lineaDeTexto+"\n"
         texto.append(lineaDeTexto)
     return texto, megaTexto
-
 
