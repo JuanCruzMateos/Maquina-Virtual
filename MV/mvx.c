@@ -12,8 +12,8 @@ int main(int argc, char const *argv[]) {
         return -1;
     load_ram(binfile, ram, &registro[0]);
     fclose(binfile);
-    printf("RAM: \n");
-    print_binary(ram, registro[0]);
+    // printf("RAM: \n");
+    // print_binary(ram, registro[0]);
     
     registro[5] = 0;
     // printf("reg[5] = %d, reg[0] = %d\n", registro[5], registro[0]);
@@ -42,6 +42,15 @@ int main(int argc, char const *argv[]) {
                 break;
             case DOS_OP_DIR_DIR:
                 (*instruccion_dos_op[op.codigo_op])(&ram[op.valor_a + registro[0]], &ram[op.valor_b + registro[0]]);
+                break;
+            case DOS_OP_IN_IN:
+                (*instruccion_dos_op[op.codigo_op])(&op.valor_a, &op.valor_b);
+                break;
+            case DOS_OP_IN_REG:
+                (*instruccion_dos_op[op.codigo_op])(&op.valor_a, &registro[op.valor_b]);
+                break;
+            case DOS_OP_IN_DIR:
+                (*instruccion_dos_op[op.codigo_op])(&op.valor_a, &ram[op.valor_b + registro[0]]);
                 break;
             case UN_OP_IN:
                 (*instruccion_un_op[op.codigo_op & 0xF])(&op.valor_a);

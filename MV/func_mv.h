@@ -15,6 +15,7 @@ extern void (*instruccion_un_op[]) (int *);
 
 typedef enum { DOS_OP_REG_IN, DOS_OP_REG_REG, DOS_OP_REG_DIR,
                DOS_OP_DIR_IN, DOS_OP_DIR_REG, DOS_OP_DIR_DIR,
+               DOS_OP_IN_IN , DOS_OP_IN_REG , DOS_OP_IN_DIR ,
                UN_OP_IN     , UN_OP_REG     , UN_OP_DIR     ,
                CERO_OP
 } estados;

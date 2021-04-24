@@ -81,7 +81,7 @@ def conviertoLineasEnListas(programaEnLineas: list) -> list:
     nroLinea = 0
     programaEnListas = []
     for lineas in programaEnLineas:
-        linea = lineas.split()
+        linea = lineas.replace(',',' ').split()
         # lista vacia [] se evalua como False
         if linea and linea[0][0] != ';':
             linea = buscoRotuloYComentario(linea, nroLinea)
@@ -175,7 +175,6 @@ def decodificoLinea(linea: list, numLinea: int) -> tuple:
                 valorOperandos.append(opVal)
                 tipoDeOperandos.append(opTipo)
             return numLinea, mnemonico, codigoMnemonico, cantidadOperandosNecesarios, valorOperandos, tipoDeOperandos, operandos
-
 
 
 def devuelveTipoOperandoYValorDecimal(operando, numLinea):

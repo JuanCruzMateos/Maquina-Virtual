@@ -5,7 +5,7 @@ make:
 	gcc -o mvx.exe mvx.c func_mv.c
 
 run:
-	./mvx.exe ../ASM/fibo.bin
+	./mvx.exe ../ASM/Ejercicio2_b.bin
 
 clean:
 	rm ./mvx.exe

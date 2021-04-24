@@ -20,6 +20,7 @@ def main():
         print("ERROR:" + " numero de parametros invalido.")
         return None
 
+    # supongo que se respeta formato
     pathCompleto = sys.argv[1]
     pathParaGuardar = sys.argv[2]
 

@@ -120,8 +120,14 @@ estados setEstado(int cant_op, int tipo_a, int tipo_b) {
                 case 2: estado = UN_OP_DIR; break;
             }
             break;
-        case 2: 
-            if (tipo_a == 1) {
+        case 2:
+            if (tipo_a == 0) {
+                switch (tipo_b) {
+                    case 0: estado = DOS_OP_IN_IN; break;
+                    case 1: estado = DOS_OP_IN_REG; break;
+                    case 2: estado = DOS_OP_IN_DIR; break;
+                }
+            } else if (tipo_a == 1) {
                 switch (tipo_b) {
                     case 0: estado = DOS_OP_REG_IN; break;
                     case 1: estado = DOS_OP_REG_REG; break;
@@ -230,7 +236,7 @@ void sys_read() {
         if (has_prompt)
             printf("[%04d]:", registro[13]);
         fflush(stdin);
-        gets(buffer);
+        fgets(buffer, 256, stdin);
         i = 0;
         j = registro[13] + registro[0];
         while (buffer[i] != '\n' && j <= registro[12] + registro[0]) {
@@ -307,7 +313,8 @@ void JN(int *a) {
 }
 
 void JZ(int *a) {
-    if (registro[8] & 0x1)
+    // Salta a la celda indicada si el bit de cero de CC es 1
+    if (registro[8] & 0x1 == 1)
         registro[5] = *a;
 }
 
@@ -317,13 +324,15 @@ void JNZ(int *a) {
 }
 
 void JNP(int *a) {
-    // TODO 
-    // COMO ??? 
+    // salto si no es positivo -> cero o negotivo
+    if (registro[8] & 0x80000000 || registro[8] & 0x00000001)
+        registro[5] = *a;
 }
 
 void JNN(int *a) {
-    // TODO
-    // COMO ??? 
+    // salta si no es negativo -> cero o positivo
+    if (registro[8] & 0x80000000 == 0) 
+        registro[5] = *a;
 }
 
 void LDH(int *a) {
