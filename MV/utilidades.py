@@ -1,5 +1,4 @@
 import re
-from pprint import pprint
 import numpy as np
 
 #       mnem : [codigo, nro operandos]
@@ -68,6 +67,8 @@ tipos_errores = ["Error sintaxis.", "No se encuentra rotulo.",
 
 errores = {}
 
+warnings = []
+
 def abrirAsmFile(nombreArchivo: str) -> list:
     """Devuelve una lista de str con las lineas del archivo"""
     f = open(nombreArchivo, "r")
@@ -120,7 +121,7 @@ def generoCodigo(programaFinal):
             else:
                 codigo = 0xEEEEEEEE
         else:
-            codigo = generaValorCodificado(linea[2], linea[3], linea[5], linea[4])
+            codigo = generaValorCodificado(linea[2], linea[3], linea[5], linea[4], numLinea)
         codigos.append(codigo)
     return codigos
 
@@ -172,14 +173,14 @@ def decodificoLinea(linea: list, numLinea: int) -> tuple:
             if cantidadOperandosNecesarios == 1 or cantidadOperandosNecesarios == 2:
                 operandos = linea[1:]
             for operando in operandos:
-                opTipo, opVal = devuelveTipoOperandoYValorDecimal(operando)
+                opTipo, opVal = devuelveTipoOperandoYValorDecimal(operando, numLinea)
                 valorOperandos.append(opVal)
                 tipoDeOperandos.append(opTipo)
             return numLinea, mnemonico, codigoMnemonico, cantidadOperandosNecesarios, valorOperandos, tipoDeOperandos, operandos
 
 
 
-def devuelveTipoOperandoYValorDecimal(operando):
+def devuelveTipoOperandoYValorDecimal(operando, numLinea):
     # verificamos si el operando es un registro
     # devuelve tipo = 1 y valor del registro
     if operando.upper() in registros:
@@ -189,13 +190,13 @@ def devuelveTipoOperandoYValorDecimal(operando):
     if re.search("\\[", operando):
         ini = operando.index("[")
         fin = operando.index("]")
-        return 2, cambioBase(operando[ini+1:fin])
+        return 2, cambioBase(operando[ini+1:fin], numLinea)
     # Sino, es un valor inmediato
     # Devuelve tipo = 0 y el valor a reemplazar
-    return 0, cambioBase(operando)
+    return 0, cambioBase(operando, numLinea)
 
 
-def cambioBase(operando):
+def cambioBase(operando, numLinea):
     # Si la primer posicion coincide con lo almacenados en bases
     # @, #, % y '
     if operando[0] in base:
@@ -224,16 +225,15 @@ def cambioBase(operando):
             valor = saltos[operando.lower()]
         else:
             valor = 0xFFF  # no se encuentra el rotulo -> reemplazo por valor
-            # errores[nroLinea] = 1
+            errores[numLinea] = 1
     return valor
 
 
-def generaValorCodificado(codMnemonico, cantidadOperandos, tipoOperandos, operandos):
+def generaValorCodificado(codMnemonico, cantidadOperandos, tipoOperandos, operandos, numLinea):
     if cantidadOperandos == 2:
-        codigo = operacion2Parametros(
-            codMnemonico, operandos[0], operandos[1], tipoOperandos[0], tipoOperandos[1])
+        codigo = operacion2Parametros(codMnemonico, operandos[0], operandos[1], tipoOperandos[0], tipoOperandos[1], numLinea)
     elif cantidadOperandos == 1:
-        codigo = operacion1Parametro(codMnemonico, operandos[0], tipoOperandos[0])
+        codigo = operacion1Parametro(codMnemonico, operandos[0], tipoOperandos[0], numLinea)
     else:
         codigo = operacion0Parametros(codMnemonico)
     return codigo
@@ -241,11 +241,11 @@ def generaValorCodificado(codMnemonico, cantidadOperandos, tipoOperandos, operan
 
 # Errores de truncamiento -> print
 
-def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, tipoOperando2):
+def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, tipoOperando2, numLinea):
     if operando1 & 0xFFF != operando1:
-        print("Warning... truncado de operando en linea ") #+ str(nroLinea + 1) + ".")
+        print("Warning... truncado de operando en linea " + str(numLinea + 1) + ".")
     if operando2 & 0xFFF != operando2:
-        print("Warning... truncado de operando en linea ")# + str(nroLinea + 1) + ".")
+        print("Warning... truncado de operando en linea " + str(numLinea + 1) + ".")
     codigo = np.left_shift(codigoOperacion & 0x00F, 28, dtype=np.int64)
     tipoA = np.left_shift(tipoOperando1, 26, dtype=np.int64)
     a = np.left_shift(operando1 & 0xFFF, 12, dtype=np.int64)
@@ -255,9 +255,9 @@ def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, t
     return codigoFull
 
 
-def operacion1Parametro(codigoOperacion, operando1, tipoOperando1):
+def operacion1Parametro(codigoOperacion, operando1, tipoOperando1, numLinea):
     if operando1 & 0xFFFF != operando1:
-        print("Warning... truncado de operando en linea ")# + str(nroLinea + 1) + ".")
+        print("Warning... truncado de operando en linea " + str(numLinea + 1) + ".")
     unos = 15 << 28
     codigo = (codigoOperacion & 0x00F) << 24
     tipoA = tipoOperando1 << 22
@@ -302,36 +302,9 @@ def generoListasDeStrings(codigos, programaFull):
             coment = ";"+comentarios[i]
         else:
             coment = ""
-        lineaDeTexto = lineaEnHexa+" "+codigoEnHexa+" " + \
-            lin+" "+mnemonico+" "+ope+" " + " "+coment
+        lineaDeTexto = lineaEnHexa+" "+codigoEnHexa+" " + lin+" "+mnemonico+" "+ope+" " + " "+coment
         megaTexto += lineaDeTexto+"\n"
         texto.append(lineaDeTexto)
     return texto, megaTexto
 
 
-# def ejecutoParser(pathCompleto, showText=False):
-#     # Abro el programa
-#     programaEnteroEnLineas = abrirAsmFile(pathCompleto)
-#     # separo por lineas
-#     programaEnteroEnListas = conviertoLineasEnListas(programaEnteroEnLineas)
-#     # genero programa con reemplazos de valores
-#     programaDecodificado = generoListaFinal(programaEnteroEnListas)
-#     # genero codigo
-#     codigo = generoCodigo(programaDecodificado)
-#     # genero texto
-#     _, megaTexto = generoListasDeStrings(codigo, programaDecodificado)
-#     if showText:
-#         print(megaTexto)
-#     return codigo
-
-
-# def guardoArchivoBin(pathParaGuardar, codigo):
-#     if codigo != None:
-#         numpyCod = np.array(codigo)
-#         numpyCod = numpyCod.astype(np.int32)
-#         filename = pathParaGuardar
-#         fileobj = open(filename, mode='wb')
-#         numpyCod.tofile(fileobj)
-#         fileobj.close()
-#         return True
-#     return False

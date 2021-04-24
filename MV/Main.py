@@ -7,16 +7,19 @@ from pprint import pprint
 def main():
     salidaPorPantalla = True
 
-    if len(sys.argv) < 3:
-        print("ERROR: falta especificar nombre de archivo.")
+    if len(sys.argv) < 3 or (len(sys.argv) == 3 and sys.argv[-1] == "-o"):
+        print("ERROR:" + " falta especificar nombre de archivo .bin")
         return None
     elif len(sys.argv) == 4:
         if sys.argv[-1] == "-o":
             salidaPorPantalla = False
         else:
-            print("ERROR: flag invalido. Solo [-o] es sopotado.")
+            print("ERROR:" + " flag invalido. Solo [-o] es sopotado.")
             return None
-    
+    elif len(sys.argv) > 4:
+        print("ERROR:" + " numero de parametros invalido.")
+        return None
+
     pathCompleto = sys.argv[1]
     pathParaGuardar = sys.argv[2]
 
@@ -55,8 +58,9 @@ def main():
         numpyCod.tofile(fileobj)
         fileobj.close()
     else:
+        print("Errores:")
         for nroLinea, tipoError in fn.errores.items():
-            print(f"Linea {nroLinea}: {fn.tipos_errores[tipoError]}")
+            print(f" - Linea {nroLinea:>2d}: {fn.tipos_errores[tipoError]}")
 
 
 if __name__ == "__main__":
