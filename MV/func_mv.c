@@ -34,6 +34,7 @@ void load_ram(FILE *arch, int *mem, int *DS) {
     *DS = i;
 }
 
+
 void print_binary(int *ram, int DS) {
     int i = 0;
 
@@ -42,6 +43,7 @@ void print_binary(int *ram, int DS) {
         i += 1;
     }
 }
+
 
 int cantidad_operandos(int instrucccion_hex) {
     if ((instrucccion_hex & 0xFF0FFFFF) == 0xFF000000)
@@ -52,6 +54,7 @@ int cantidad_operandos(int instrucccion_hex) {
         return 2;
 }
 
+
 int codigo_operacion(int instruccion_hex, int cant_op) {
     if (cant_op == 2)
         return (instruccion_hex >> 28) & 0xF;
@@ -61,6 +64,7 @@ int codigo_operacion(int instruccion_hex, int cant_op) {
         return (instruccion_hex >> 20) & 0xFFF;
 }
 
+
 int tipo_operando_a(int instruccion_hex, int cant_op) {
     if (cant_op == 0)
         return -1;
@@ -69,6 +73,7 @@ int tipo_operando_a(int instruccion_hex, int cant_op) {
     else
         return (instruccion_hex >> 26) & 0x3;
 }
+
 
 int tipo_operando_b(int instruccion_hex, int cant_op) {
     if (cant_op == 0 || cant_op == 1)
@@ -98,6 +103,7 @@ int valor_operando_a(int instruccion_hex, int cant_op) {
     } 
 }
 
+
 int valor_operando_b(int instruccion_hex, int cant_op) {
     int valor;
 
@@ -111,7 +117,6 @@ int valor_operando_b(int instruccion_hex, int cant_op) {
 }
 
 // ---
-
 
 estados setEstado(int cant_op, int tipo_a, int tipo_b) {
     estados estado;
@@ -152,6 +157,7 @@ estados setEstado(int cant_op, int tipo_a, int tipo_b) {
     return estado;
 }
 
+
 operacion decodificar_operacion(int instruccion_hex) {
     operacion op;
     int cant_op = cantidad_operandos(instruccion_hex);
@@ -165,6 +171,7 @@ operacion decodificar_operacion(int instruccion_hex) {
     return op;
 }
 
+
 void modificar_CC(int resultado) {
     // CC == registro[8]
     int N = resultado & 0x80000000;
@@ -172,19 +179,23 @@ void modificar_CC(int resultado) {
     registro[8] = N | Z;
 }
 
+
 void MOV(int *a, int *b) {
     *a = *b;
 }
+
 
 void ADD(int *a, int *b) {
     *a += *b;
     modificar_CC(*a);
 }
 
+
 void SUB(int *a, int *b) {
     *a -= *b;
     modificar_CC(*a);
 }
+
 
 void SWAP(int *a, int *b) {
     int aux = *a;
@@ -192,10 +203,12 @@ void SWAP(int *a, int *b) {
     *b = aux;
 }
 
+
 void MUL(int *a, int *b) {
     *a += *b;
     modificar_CC(*a);
 }
+
 
 void DIV(int *a, int *b) {
     *a = *a / *b;
@@ -203,34 +216,41 @@ void DIV(int *a, int *b) {
     modificar_CC(*a);
 }
 
+
 void CMP(int *a, int *b) {
     modificar_CC(*a - *b);
 }
+
 
 void SHL(int *a, int *b) {
     *a = *a << *b;
     modificar_CC(*a);
 }
 
+
 void SHR(int *a, int *b) {
     *a = *a >> *b;
     modificar_CC(*a);
 }
+
 
 void AND(int *a, int *b) {
     *a = *a & *b;
     modificar_CC(*a);
 }
 
+
 void OR(int *a, int *b) {
     *a = *a | *b;
     modificar_CC(*a);
 }
 
+
 void XOR(int *a, int *b) {
     *a = *a ^ *b;
     modificar_CC(*a);
 }
+
 
 // REVISAR IMPLEMENTACION DE SCAN_CHAR !!!
 
@@ -266,6 +286,7 @@ void sys_read() {
         }
     }
 }
+
 
 void sys_write() {
     int has_prompt = (registro[10] & 0x800) == 0;
@@ -355,6 +376,7 @@ void SYS(int *a) {
         sys_breakpoint();
 }
 
+
 void JMP(int *a) {
     registro[5] = *a;
 }
@@ -365,10 +387,12 @@ void JP(int *a) {
         registro[5] = *a;
 }
 
+
 void JN(int *a) {
     if (registro[8] & 0x80000000)
         registro[5]= *a;
 }
+
 
 void JZ(int *a) {
     // Salta a la celda indicada si el bit de cero de CC es 1
@@ -376,10 +400,12 @@ void JZ(int *a) {
         registro[5] = *a;
 }
 
+
 void JNZ(int *a) {
     if ((registro[8] & 0x1) == 0)
         registro[5] = *a;
 }
+
 
 void JNP(int *a) {
     // salto si no es positivo -> cero o negotivo
@@ -387,19 +413,23 @@ void JNP(int *a) {
         registro[5] = *a;
 }
 
+
 void JNN(int *a) {
     // salta si no es negativo -> cero o positivo
     if (registro[8] & 0x80000000 == 0) 
         registro[5] = *a;
 }
 
+
 void LDH(int *a) {
     registro[9] = (registro[9] & 0x3FFFFFFF) | ((*a & 0x3) << 30);
 }
 
+
 void LDL(int *a) {
     registro[9] = (registro[9] & 0xFFFFFFFC) | (*a & 0x3);
 }
+
 
 void RND(int *a) {
     // TODO: segunda parte
@@ -408,10 +438,12 @@ void RND(int *a) {
     // *a = rand();
 }
 
+
 void NOT(int *a) {
     *a = ~(*a);
     modificar_CC(*a);
 }
+
 
 void STOP() {
     registro[5] = -1;
@@ -425,7 +457,6 @@ void print_codigo(int inst_actual) {
 }
 
 
-// print registros:
 void print_registros() {
     printf("Registros:\n");
     printf("| DS = %10d | %15s | %15s | %15s |\n", registro[0], " ", " ", " ");

@@ -14,12 +14,13 @@ extern int ram[CANT_RAM];
 extern void (*instruccion_dos_op[]) (int *, int *);
 extern void (*instruccion_un_op[]) (int *);
 
-// 
+
 typedef struct {
     int b, c, d;
 } flags_t;
 
 extern flags_t flags;
+
 
 typedef enum { DOS_OP_REG_IN, DOS_OP_REG_REG, DOS_OP_REG_DIR,
                DOS_OP_DIR_IN, DOS_OP_DIR_REG, DOS_OP_DIR_DIR,
@@ -27,6 +28,7 @@ typedef enum { DOS_OP_REG_IN, DOS_OP_REG_REG, DOS_OP_REG_DIR,
                UN_OP_IN     , UN_OP_REG     , UN_OP_DIR     ,
                CERO_OP
 } estados;
+
 
 typedef struct {
     estados estado;
@@ -36,6 +38,7 @@ typedef struct {
     int tipo_b;
     int valor_b;
 } operacion;
+
 
 void load_ram(FILE *arch, int *mem, int *DS);
 void print_binary(int *ram, int DS);

@@ -19,8 +19,6 @@ int main(int argc, char const *argv[]) {
                 flags.d = 1;
         }
     }
-
-
     binfile = fopen(argv[1], "rb");
     if (binfile == NULL)
         return -1;
@@ -28,7 +26,6 @@ int main(int argc, char const *argv[]) {
     fclose(binfile);
     // printf("RAM: \n");
     // print_binary(ram, registro[0]);
-    
     registro[5] = 0;
     if (flags.c)
         system("cls");
@@ -79,8 +76,6 @@ int main(int argc, char const *argv[]) {
                 (*instruccion_un_op[op.codigo_op & 0xF])(&ram[op.valor_a + registro[0]]);
                 break;
         }
-        // getchar();
     }
-    print_registros();
     return 0;
 }
