@@ -129,7 +129,7 @@ def buscoRotuloYComentario(linea: list, nroLinea: int) -> list:
     # El rotulo solo pueden estar al inicio de una linea
     if re.search(":$", linea[0]) != None:
         rotulo = linea.pop(0)
-        rotulo = rotulo.replace(':', '')
+        rotulo = rotulo.replace(':', '').upper()
         saltos[rotulo] = nroLinea
         etiqueta[nroLinea] = rotulo
     # Ahora busco comentarios
@@ -201,7 +201,8 @@ def cambioBase(operando, numLinea):
         baseOperando = base[operando[0]]
         # descarto el primer valor
         operandoAux = operando[1:]
-        if (operandoAux[0] == '-' and operandoAux[1:].isnumeric()) or operandoAux.isnumeric():
+        # if (operandoAux[0] == '-' and operandoAux[1:].isnumeric()) or operandoAux.isnumeric():
+        if operandoAux[0] == '-' and operandoAux[1:].isnumeric():
             baseOperando = 10
             operandoAux = operandoAux[:]
         # cuando son ASCII pueden tener una comilla mas -> baseOp != 16 ya que si es hex da true
@@ -221,8 +222,8 @@ def cambioBase(operando, numLinea):
         else:
             valor = int(operandoAux, baseOperando)
     else:
-        if operando.lower() in saltos:
-            valor = saltos[operando.lower()]
+        if operando.upper() in saltos:
+            valor = saltos[operando.upper()]
         else:
             valor = 0xFFF  # no se encuentra el rotulo -> reemplazo por valor
             errores[numLinea] = 1

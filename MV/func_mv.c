@@ -292,6 +292,7 @@ void sys_read() {
 void sys_write() {
     int has_prompt = (registro[10] & 0x800) == 0;
     int has_end = (registro[10] & 0x100) == 0;
+    // int has_end = ((registro[10] >> 8) & 0x1) == 0;
     int formato = registro[10] & 0x1F;
     int i;
 
@@ -449,12 +450,12 @@ void JNN(int *a) {
 
 
 void LDH(int *a) {
-    registro[9] = (registro[9] & 0x3FFFFFFF) | ((*a & 0x3) << 30);
+    registro[9] = (registro[9] & 0xFFFFFFFF) | ((*a & 0xFFFF) << 16);
 }
 
 
 void LDL(int *a) {
-    registro[9] = (registro[9] & 0xFFFFFFFC) | (*a & 0x3);
+    registro[9] = (registro[9] & 0xFFFFFFFF) | (*a & 0xFFFF);
 }
 
 
