@@ -20,9 +20,10 @@ flags_t flags;
 void (*instruccion_dos_op[]) (int *, int *) = {MOV, ADD, SUB, SWAP, MUL, DIV, CMP, SHL, SHR, AND,  OR, XOR};
 void (*instruccion_un_op[]) (int *)         = {SYS, JMP,  JZ,   JP,  JN, JNZ, JNP, JNN, LDL, LDH, RND, NOT};
 
-char *ops[][12] = {{"MOV", "ADD", "SUB", "SWAP", "MUL", "DIV", "CMP", "SHL", "SHR", "AND", "OR", "XOR"},
-                   {"SYS", "JMP",  "JZ",   "JP",  "JN", "JNZ", "JNP", "JNN", "LDL", "LDH","RND", "NOT"},
-                   {"STOP",  "",      "",     "",    "",    "",    "",    "",    "",    "",   "",   ""}};
+char *tags[][12] = {{"STOP",    "",    "",     "",    "",    "",    "",    "",    "",    "",   "",    ""},
+                    {"SYS" , "JMP",  "JZ",   "JP",  "JN", "JNZ", "JNP", "JNN", "LDL", "LDH","RND", "NOT"},
+                    {"MOV" , "ADD", "SUB", "SWAP", "MUL", "DIV", "CMP", "SHL", "SHR", "AND", "OR", "XOR"},
+                    {"AX"  ,  "BX",  "CX",   "DX",  "EX",  "FX",    "",    "",    "",    "",   "",   "" }};
 
 
 void load_ram(FILE *arch, int *mem, int *DS) {
@@ -318,18 +319,44 @@ void sys_write() {
 void disassembler() {
     int inicio = (registro[5] - 5 >= 0) ? registro[5] - 5 : 0;
     int fin = (registro[5] + 5 < registro[0]) ? registro[5] + 5 : registro[0];
+    char mem[8], hex[12];
+    char *mnem, op_1[15], op_2[15];
     operacion op;
-    char linea[8];
-    char hex[12];
-    char assembly[50];
     int i;
 
+    if (fin - inicio < 10) {
+        if (fin == registro[0] && inicio != 0)
+            inicio = (fin - 10 >= 0) ? fin - 10 : 0;
+        else if (inicio == 0 && fin != registro[0])
+            fin = (inicio + 10 <= registro[0]) ? inicio + 10 : registro[0];
+    }
+    printf("\n");
     for (i = inicio; i < fin; i++) {
         op = decodificar_operacion(ram[i]);
-        i == registro[5] ? sprintf(linea, ">[%04d]", i) : sprintf(linea, " [%04d]", i);
+        i == registro[5] ? sprintf(mem, ">[%04d]", i) : sprintf(mem, " [%04d]", i);
         sprintf(hex, "%02X %02X %02X %02X", (ram[i] >> 24) & 0xFF, (ram[i] >> 16) & 0xFF, (ram[i] >> 8) & 0xFF, ram[i] & 0xFF);
-        // TODO
-        printf("%s %s\n", linea, hex);
+        // mnemotico
+        if (0 <= op.codigo_op && op.codigo_op <= 11)
+            mnem = tags[2][op.codigo_op];
+        else if (240 <= op.codigo_op && op.codigo_op <= 251)
+            mnem = tags[1][op.codigo_op & 0xF];
+        else
+            mnem = tags[0][0];
+        // operando a
+        switch (op.tipo_a) {
+            case -1: sprintf(op_1, "%s", ""); break;
+            case  0: sprintf(op_1, "%d", op.valor_a); break;
+            case  1: sprintf(op_1, "%s", tags[3][op.valor_a - 10]); break;
+            case  2: sprintf(op_1, "[%d]", op.valor_a); break;
+        }
+        // operando b
+        switch (op.tipo_b) {
+            case  0: sprintf(op_2, "%d", op.valor_b); break;
+            case  1: sprintf(op_2, "%s", tags[3][op.valor_b - 10]); break;
+            case  2: sprintf(op_2, "[%d]", op.valor_b); break;
+        }
+        printf("%s %s    %2d: %5s %5s %s", mem, hex, i+1, mnem, " ", op_1);
+        (op.tipo_b == -1) ? printf("\n") : printf(", %s\n", op_2);
     }
     print_registros();
 }
@@ -360,7 +387,7 @@ void sys_breakpoint() {
                 else
                     n2 = n1;
                 for (i = n1; i <= n2; i++)
-                    printf("[%04d]: %04X %04X  %15d\n", i, (ram[i] & 0xFFFF0000) >> 16, ram[i] & 0xFFFF, ram[i]);
+                    printf("[%04d]: %04X %04X %12d\n", i, (ram[i] & 0xFFFF0000) >> 16, ram[i] & 0xFFFF, ram[i]);
             }
         }
     }
@@ -449,18 +476,10 @@ void STOP() {
     registro[5] = -1;
 }
 
-
-void print_codigo(int inst_actual) {
-    system("cls");
-    printf("Codigo: ");
-
-}
-
-
 void print_registros() {
-    printf("Registros:\n");
-    printf("| DS = %10d | %15s | %15s | %15s |\n", registro[0], " ", " ", " ");
-    printf("| %15s | IP = %10d | %15s | %15s |\n", " ", registro[5], " ", " ");
-    printf("| CC = %10d | AC = %10d | AX = %10d | BX = %10d |\n", registro[8], registro[9], registro[10], registro[11]);
-    printf("| CX = %10d | DX = %10d | EX = %10d | FX = %10d |\n", registro[12], registro[13], registro[14], registro[15]);
+    printf("\nRegistros:\n");
+    printf("| DS = %15d | %20s | %20s | %20s |\n", registro[0], " ", " ", " ");
+    printf("| %20s | IP = %15d | %20s | %20s |\n", " ", registro[5], " ", " ");
+    printf("| CC = %15d | AC = %15d | AX = %15d | BX = %15d |\n", registro[8], registro[9], registro[10], registro[11]);
+    printf("| CX = %15d | DX = %15d | EX = %15d | FX = %15d |\n\n", registro[12], registro[13], registro[14], registro[15]);
 }
