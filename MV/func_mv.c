@@ -211,8 +211,8 @@ void MUL(int *a, int *b) {
 
 
 void DIV(int *a, int *b) {
-    *a = *a / *b;
     registro[9] = *a % *b;
+    *a = *a / *b;
     modificar_CC(*a);
 }
 
