@@ -333,7 +333,7 @@ void disassembler() {
     printf("\n");
     for (i = inicio; i < fin; i++) {
         op = decodificar_operacion(ram[i]);
-        i == registro[5] ? sprintf(mem, ">[%04d]", i) : sprintf(mem, " [%04d]", i);
+        i == registro[5]-1 ? sprintf(mem, ">[%04d]", i) : sprintf(mem, " [%04d]", i);
         sprintf(hex, "%02X %02X %02X %02X", (ram[i] >> 24) & 0xFF, (ram[i] >> 16) & 0xFF, (ram[i] >> 8) & 0xFF, ram[i] & 0xFF);
         // mnemotico
         if (0 <= op.codigo_op && op.codigo_op <= 11)

@@ -201,12 +201,15 @@ def cambioBase(operando, numLinea):
         baseOperando = base[operando[0]]
         # descarto el primer valor
         operandoAux = operando[1:]
+        if (operandoAux[0] == '-' and operandoAux[1:].isnumeric()) or operandoAux.isnumeric():
+            baseOperando = 10
+            operandoAux = operandoAux[:]
         # cuando son ASCII pueden tener una comilla mas -> baseOp != 16 ya que si es hex da true
-        if baseOperando != 16 and not operandoAux.isnumeric():
+        elif baseOperando != 16 and not operandoAux.isnumeric():
             operandoAux = operandoAux[:-1]
     # sino estan en la lista solo quedan dos opciones
     # opcion 1 --> que sea un valor decimal puro
-    elif operando.isnumeric():
+    elif (operando[0] == '-' and operando[1:].isnumeric()) or operando.isnumeric():
         baseOperando = 10
         operandoAux = operando[:]
     # opcion 2 --> que sea una etiqueta
