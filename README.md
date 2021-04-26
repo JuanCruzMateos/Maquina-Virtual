@@ -7,7 +7,7 @@
 * Juan Cruz Mateos  
 
 ## Pasos a seguir para ejecutar el codigo.
-Necesitan instalar 2 librerias de python (3.6 o superior)
+* Necesitan instalar 2 librerias de python (3.6 o superior)
 1) numpy
 2) re
 
