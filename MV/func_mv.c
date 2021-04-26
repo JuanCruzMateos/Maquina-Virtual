@@ -206,7 +206,7 @@ void SWAP(int *a, int *b) {
 
 
 void MUL(int *a, int *b) {
-    *a += *b;
+    *a *= *b;
     modificar_CC(*a);
 }
 
