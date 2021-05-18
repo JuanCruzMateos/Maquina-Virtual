@@ -1,0 +1,28 @@
+# depslib dependency file v1.0
+1618857112 source:c:\users\mateo\documents\ingenieria\arquitectura\maquina virtual\mv\ejecutor\ejecutor\main.c
+	"func_mv.h"
+
+1618857041 c:\users\mateo\documents\ingenieria\arquitectura\maquina virtual\mv\ejecutor\ejecutor\func_mv.h
+	<stdio.h>
+	<stdlib.h>
+
+1618857182 source:c:\users\mateo\documents\ingenieria\arquitectura\maquina virtual\mv\ejecutor\ejecutor\func_mv.c
+	"func_mv.h"
+
+1619249043 source:c:\users\mateo\documents\ingenieria\arquitectura\maquina virtual\mv\ejecutor\func_mv.c
+	"func_mv.h"
+
+1619236150 c:\users\mateo\documents\ingenieria\arquitectura\maquina virtual\mv\ejecutor\func_mv.h
+	<stdio.h>
+	<stdlib.h>
+
+1620684084 source:c:\users\mateo\documents\ingenieria\arquitectura\maquina virtual\mv\ejecutor\main.c
+	"func_mv.h"
+	"hashtable.h"
+
+1620682867 source:c:\users\mateo\documents\ingenieria\arquitectura\maquina virtual\mv\ejecutor\hashtable.c
+	"hashtable.h"
+
+1620683469 c:\users\mateo\documents\ingenieria\arquitectura\maquina virtual\mv\ejecutor\hashtable.h
+	<stdlib.h>
+

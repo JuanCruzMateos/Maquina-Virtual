@@ -28,13 +28,12 @@ def tokens(fname: str) -> list:
                 comment = " "
             instruccion = instruccion[0]
             print(instruccion, comment)
-        return inst
+    # return inst
 
 
 def main():
     asmfile_name = sys.argv[1]
     instrucciones = tokens(asmfile_name)
-    pprint(instrucciones)
     # obtener los labels
     # labels = {}
     # for i, instruccion in enumerate(instrucciones):
