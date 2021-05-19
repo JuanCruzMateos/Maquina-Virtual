@@ -201,8 +201,8 @@ def cambioBase(operando, numLinea):
         baseOperando = base[operando[0]]
         # descarto el primer valor
         operandoAux = operando[1:]
-        if (operandoAux[0] == '-' and operandoAux[1:].isnumeric()) or operandoAux.isnumeric():
-        # if operandoAux[0] == '-' and operandoAux[1:].isnumeric():
+        # if (operandoAux[0] == '-' and operandoAux[1:].isnumeric()) or operandoAux.isnumeric():
+        if operandoAux[0] == '-' and operandoAux[1:].isnumeric():
             baseOperando = 10
             operandoAux = operandoAux[:]
         # cuando son ASCII pueden tener una comilla mas -> baseOp != 16 ya que si es hex da true

@@ -14,7 +14,7 @@ CMP2:   cmp     15,%10
         jn      COM2
         jmp     COM4
 COM2:   and     [1], ex
-CMP3:   cmp     %20,' 
+CMP3:   cmp     %20,' '
         jz      COM3
         jmp     CMP3
 COM3:   and     [2], ex

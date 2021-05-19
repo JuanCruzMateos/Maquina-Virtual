@@ -300,14 +300,14 @@ void sys_write() {
         if (has_prompt)
             printf("[%04d]:", i);
         switch (formato) {
-            case 1:  printf("%d", ram[i + registro[0]]); break;
-            case 4:  printf("@%o", ram[i + registro[0]]); break;
-            case 8:  printf("%%%X", ram[i + registro[0]]); break;
-            case 16: printf("%c", ram[i + registro[0]] & 0xFF); break;
+            case 1:  printf("%d ", ram[i + registro[0]]); break;
+            case 4:  printf("@%08o ", ram[i + registro[0]]); break;
+            case 8:  printf("%%%08X ", ram[i + registro[0]]); break;
+            case 16: printf("%c ", ram[i + registro[0]] & 0xFF); break;
             default:
                 registro[10] & 0x10 ? printf("%c ", ram[i + registro[0]] & 0xFF) : printf(" ");
-                registro[10] & 0x08 ? printf("%%%X ", ram[i + registro[0]]) : printf(" ");
-                registro[10] & 0x04 ? printf("@%o ", ram[i + registro[0]]) : printf(" ");
+                registro[10] & 0x08 ? printf("%%%08X ", ram[i + registro[0]]) : printf(" ");
+                registro[10] & 0x04 ? printf("@%08o ", ram[i + registro[0]]) : printf(" ");
                 registro[10] & 0x01 ? printf("%d ", ram[i + registro[0]]) : printf(" ");
                 break;
         }
