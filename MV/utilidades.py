@@ -160,21 +160,31 @@ def decodificoLinea(linea: list, numLinea: int) -> tuple:
         # Obtengo la cantidad de parametros que efectivamente tengo
         cantidadOperandosEncontrados = len(linea)-1
         # verificamos que la cantidad de operandos coincide con los encontrados
+
+        valorOperandos = []
+        tipoDeOperandos = []
+        operandos = []
         if cantidadOperandosEncontrados != cantidadOperandosNecesarios:
-            errores[numLinea] = 2
-            return numLinea, None, None, None, None, None, None, None
+            # pueden ser dos comillas separadas por un espacio
+            if linea[-1] == "'" and linea[-2] == "'":
+                operandos = [linea[1], "' '"]
+            elif linea[-3] == "'" and linea[-2] == "'":
+                operandos = ["' '", linea[4]]
+            else:
+                errores[numLinea] = 2
+                return numLinea, None, None, None, None, None, None, None
+        # Si no hay error en la cantidad de parametros, paso a decodificarlos
+        # valorOperandos = []
+        # tipoDeOperandos = []
+        # operandos = []
+        # if cantidadOperandosNecesarios == 1 or cantidadOperandosNecesarios == 2:
         else:
-            # Si no hay error en la cantidad de parametros, paso a decodificarlos
-            valorOperandos = []
-            tipoDeOperandos = []
-            operandos = []
-            if cantidadOperandosNecesarios == 1 or cantidadOperandosNecesarios == 2:
-                operandos = linea[1:]
-            for operando in operandos:
-                opTipo, opVal = devuelveTipoOperandoYValorDecimal(operando, numLinea)
-                valorOperandos.append(opVal)
-                tipoDeOperandos.append(opTipo)
-            return numLinea, mnemonico, codigoMnemonico, cantidadOperandosNecesarios, valorOperandos, tipoDeOperandos, operandos
+            operandos = linea[1:]
+        for operando in operandos:
+            opTipo, opVal = devuelveTipoOperandoYValorDecimal(operando, numLinea)
+            valorOperandos.append(opVal)
+            tipoDeOperandos.append(opTipo)
+        return numLinea, mnemonico, codigoMnemonico, cantidadOperandosNecesarios, valorOperandos, tipoDeOperandos, operandos
 
 
 def devuelveTipoOperandoYValorDecimal(operando, numLinea):
@@ -201,13 +211,16 @@ def cambioBase(operando, numLinea):
         baseOperando = base[operando[0]]
         # descarto el primer valor
         operandoAux = operando[1:]
+        # cuando son ASCII pueden tener una comilla mas, o ser solo una comilla '
+        if baseOperando == "ASCII":
+            if len(operandoAux) == 0:
+                operandoAux = ' '
+            else:
+                operandoAux = operandoAux[:-1]
         # if (operandoAux[0] == '-' and operandoAux[1:].isnumeric()) or operandoAux.isnumeric():
-        if operandoAux[0] == '-' and operandoAux[1:].isnumeric():
+        elif operandoAux[0] == '-' and operandoAux[1:].isnumeric():
             baseOperando = 10
             operandoAux = operandoAux[:]
-        # cuando son ASCII pueden tener una comilla mas -> baseOp != 16 ya que si es hex da true
-        elif baseOperando != 16 and not operandoAux.isnumeric():
-            operandoAux = operandoAux[:-1]
     # sino estan en la lista solo quedan dos opciones
     # opcion 1 --> que sea un valor decimal puro
     elif (operando[0] == '-' and operando[1:].isnumeric()) or operando.isnumeric():
@@ -216,6 +229,7 @@ def cambioBase(operando, numLinea):
     # opcion 2 --> que sea una etiqueta
     else:
         baseOperando = 500  # es una etiqueta
+    
     if baseOperando != 500:
         if baseOperando == "ASCII":
             valor = ord(operandoAux)
