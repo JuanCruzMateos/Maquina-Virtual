@@ -51,6 +51,7 @@ def main(argv):
         print(megaTexto)
 
     if not fn.errores:
+        # TODO agregar headers in numpyCod
         numpyCod = np.array(codigo)
         numpyCod = numpyCod.astype(np.int32)
         filename = pathParaGuardar

@@ -20,5 +20,3 @@ muestro:	mov [2], BX
 		shr BX, 1
 		jnz muestro
 		stop
-	
-

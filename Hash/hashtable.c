@@ -27,15 +27,21 @@ hash_table_t *hash_crear() {
 void hash_guardar(hash_table_t *ht, int key, funct_ptr fptr) {
     // si key ya estaba pisar con nuevo valor
     unsigned int posicion = hash(key);
-    nodo_hash *newNodo;
+    nodo_hash *nodo;
 
-    newNodo = (nodo_hash *) malloc(sizeof(nodo_hash));
-    // if (newNodo != NULL)
-    newNodo->clave = key;
-    newNodo->fptr = fptr;
-    newNodo->sig = ht->datos[posicion];
-    ht->datos[posicion] = newNodo;
-    ht->tam += 1;
+    nodo = ht->datos[posicion];
+    while (nodo != NULL && nodo->clave != key)
+        nodo = nodo->sig;
+    if (nodo != NULL)
+        nodo->fptr = fptr;
+    else {
+        nodo = (nodo_hash *) malloc(sizeof(nodo_hash));
+        nodo->clave = key;
+        nodo->fptr = fptr;
+        nodo->sig = ht->datos[posicion];
+        ht->datos[posicion] = nodo;
+        ht->tam += 1;
+    }
 }
 
 

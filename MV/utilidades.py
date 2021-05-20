@@ -31,7 +31,13 @@ hashmap = {'MOV': [0, 2],
 
 # registro : codigo
 registros = {'DS': 0,
+             'SS': 1,
+             'ES': 2,
+             'CS': 3,
+             'HP': 4,
              'IP': 5,
+             'SP': 6,
+             'BP': 7,
              'CC': 8,
              'AC': 9,
              'AX': 10,
@@ -42,6 +48,16 @@ registros = {'DS': 0,
              'FX': 15
              }
 
+headers = {
+    'DATA': 1024,
+    'STACK': 1024,
+    'EXTRA': 1024,
+    'CODE': 1024
+}
+
+constantes = {
+    # constante: valor
+}
 
 base = {
     "#": 10,
@@ -82,13 +98,44 @@ def conviertoLineasEnListas(programaEnLineas: list) -> list:
     programaEnListas = []
     for lineas in programaEnLineas:
         linea = lineas.replace(',',' ').split()
-        # lista vacia [] se evalua como False
-        if linea and linea[0][0] != ';':
-            linea = buscoRotuloYComentario(linea, nroLinea)
-            quitarComas(linea)
-            programaEnListas.append(linea)
-            nroLinea += 1
+        # lista vacia [] se evalua como False, la salteo
+        if linea:
+            if linea[0][0] == '\\':
+                procesarDirectiva(linea)
+            elif linea[1].upper() == "EQU":
+                guardarConstante(linea)
+            elif linea[0][0] != ';':
+                linea = buscoRotuloYComentario(linea, nroLinea)
+                quitarComas(linea)
+                programaEnListas.append(linea)
+                nroLinea += 1
+                # 
+                # TODO identificar \\ ASM
+                #
     return programaEnListas
+
+
+def procesarDirectiva(linea: list):
+    """
+    Recive una lista con la linea,ej: ['\\ASM', 'DATA=10', 'EXTRA=3000', 'STACK=5000'].
+    Analiza y guarda los valores de cada segmento en el diccionario headers.
+    """
+    linea = linea[1:]
+    for directiva in linea:
+        segmento, tam = directiva.split("=")
+        headers[segmento] = int(tam)
+
+def guardarConstante(linea: list):
+    const = linea[0]
+    valor = linea[2]
+    if valor.isnumeric():
+        valor = int(valor)
+    else:
+        baseVal = base[valor[0]]
+        if baseVal != "'":
+            valor = int(valor[1:], baseVal)
+    
+    constantes[const] = valor
 
 
 def quitarComas(linea: list) -> list:

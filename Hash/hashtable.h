@@ -21,6 +21,7 @@ typedef struct {
 hash_table_t *hash_crear();
 
 // Guarda un par clave valor
+// si key ya estaba en las key, se actualiza el par key-val con el nuevo valor de fptr
 void hash_guardar(hash_table_t *ht, int key, funct_ptr fptr);
 
 // Obtener valor de una determinada clave
