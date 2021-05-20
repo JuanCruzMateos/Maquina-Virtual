@@ -99,19 +99,19 @@ def conviertoLineasEnListas(programaEnLineas: list) -> list:
     for lineas in programaEnLineas:
         linea = lineas.replace(',',' ').split()
         # lista vacia [] se evalua como False, la salteo
-        if linea:
+        if linea and linea[0][0] != ';':
             if linea[0][0] == '\\':
                 procesarDirectiva(linea)
-            elif linea[1].upper() == "EQU":
+            elif len(linea) > 1  and linea[1].upper() == "EQU":
                 guardarConstante(linea)
-            elif linea[0][0] != ';':
+            else:
                 linea = buscoRotuloYComentario(linea, nroLinea)
                 quitarComas(linea)
                 programaEnListas.append(linea)
                 nroLinea += 1
-                # 
-                # TODO identificar \\ ASM
-                #
+            # 
+            # TODO identificar \\ ASM
+            #
     return programaEnListas
 
 
@@ -124,6 +124,7 @@ def procesarDirectiva(linea: list):
     for directiva in linea:
         segmento, tam = directiva.split("=")
         headers[segmento] = int(tam)
+
 
 def guardarConstante(linea: list):
     const = linea[0]
