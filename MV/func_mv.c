@@ -264,7 +264,7 @@ void sys_read() {
 
     if (scan_char) {
         if (has_prompt)
-            printf("[%04d]:", registro[13]);
+            printf("[%04d]: ", registro[13]);
         fflush(stdin);
         fgets(buffer, 256, stdin);
         i = 0;
@@ -292,7 +292,6 @@ void sys_read() {
 void sys_write() {
     int has_prompt = (registro[10] & 0x800) == 0;
     int has_end = (registro[10] & 0x100) == 0;
-    // int has_end = ((registro[10] >> 8) & 0x1) == 0;
     int formato = registro[10] & 0x1F;
     int i;
 
@@ -382,7 +381,7 @@ void sys_breakpoint() {
             else if (buffer[0] != 'p') {
                 nums = strtok(buffer, " ");
                 n1 = atoi(nums);
-                nums = strtok (NULL, " ");
+                nums = strtok(NULL, " ");
                 if (nums != NULL)
                     n2 = atoi(nums);
                 else

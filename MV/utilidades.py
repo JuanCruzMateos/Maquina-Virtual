@@ -1,62 +1,61 @@
 import re
+from typing import OrderedDict
 import numpy as np
 
-#       mnem : [codigo, nro operandos]
-hashmap = {'MOV': [0, 2],
-           'ADD': [1, 2],
-           'SUB': [2, 2],
-           'SWAP': [3, 2],
-           'MUL': [4, 2],
-           'DIV': [5, 2],
-           'CMP': [6, 2],
-           'SHL': [7, 2],
-           'SHR': [8, 2],
-           'AND': [9, 2],
-           'OR': [10, 2],
-           'XOR': [11, 2],
-           'SYS': [240, 1],
-           'JMP': [241, 1],
-           'JZ': [242, 1],
-           'JP': [243, 1],
-           'JN': [244, 1],
-           'JNZ': [245, 1],
-           'JNP': [246, 1],
-           'JNN': [247, 1],
-           'LDL': [248, 1],
-           'LDH': [249, 1],
-           'RND': [250, 1],
-           'NOT': [251, 1],
-           'STOP': [4081, 0]
-           }
-
-# registro : codigo
-registros = {'DS': 0,
-             'SS': 1,
-             'ES': 2,
-             'CS': 3,
-             'HP': 4,
-             'IP': 5,
-             'SP': 6,
-             'BP': 7,
-             'CC': 8,
-             'AC': 9,
-             'AX': 10,
-             'BX': 11,
-             'CX': 12,
-             'DX': 13,
-             'EX': 14,
-             'FX': 15
-             }
-
-headers = {
-    'DATA': 1024,
-    'STACK': 1024,
-    'EXTRA': 1024,
-    'CODE': 1024
+# mnem : [codigo, nro operandos]
+hashmap = {
+    'MOV' : [0, 2],
+    'ADD' : [1, 2],
+    'SUB' : [2, 2],
+    'SWAP': [3, 2],
+    'MUL' : [4, 2],
+    'DIV' : [5, 2],
+    'CMP' : [6, 2],
+    'SHL' : [7, 2],
+    'SHR' : [8, 2],
+    'AND' : [9, 2],
+    'OR'  : [10, 2],
+    'XOR' : [11, 2],
+    'SYS' : [240, 1],
+    'JMP' : [241, 1],
+    'JZ'  : [242, 1],
+    'JP'  : [243, 1],
+    'JN'  : [244, 1],
+    'JNZ' : [245, 1],
+    'JNP' : [246, 1],
+    'JNN' : [247, 1],
+    'LDL' : [248, 1],
+    'LDH' : [249, 1],
+    'RND' : [250, 1],
+    'NOT' : [251, 1],
+    'STOP': [4081, 0]
 }
 
-constantes = {
-    # constante: valor
+# registro : codigo
+registros = {
+    'DS': 0,
+    'SS': 1,
+    'ES': 2,
+    'CS': 3,
+    'HP': 4,
+    'IP': 5,
+    'SP': 6,
+    'BP': 7,
+    'CC': 8,
+    'AC': 9,
+    'AX': 10,
+    'BX': 11,
+    'CX': 12,
+    'DX': 13,
+    'EX': 14,
+    'FX': 15
+}
+
+headers = {
+    'DATA' : 1024,
+    'STACK': 1024,
+    'EXTRA': 1024,
+    'CODE' : 1024
 }
 
 base = {
@@ -66,6 +65,11 @@ base = {
     "'": "ASCII"
 }
 
+strings = {
+    # tag: [string, #mem]
+}
+
+# rotulos y constantes no string comparten la misma tabla
 saltos = {
     # rotulo: nroLinea
 }
@@ -79,12 +83,15 @@ comentarios = {
 }
 
 tipos_errores = ["Error sintaxis.", "No se encuentra rotulo.",
-                 "Cantidad de operandos erronea."]
+                 "Cantidad de operandos erronea.", "Simbolo duplicado."]
 
 errores = {}
 
+
 def abrirAsmFile(nombreArchivo: str) -> list:
-    """Devuelve una lista de str con las lineas del archivo"""
+    """
+    Devuelve una lista de str con las lineas del archivo.
+    """
     f = open(nombreArchivo, "r")
     programa = f.read()
     programaEnLineas = programa.split("\n")
@@ -93,7 +100,9 @@ def abrirAsmFile(nombreArchivo: str) -> list:
 
 
 def conviertoLineasEnListas(programaEnLineas: list) -> list:
-    """Devuelve una lista de listas, cada una con mnem y op en str"""
+    """
+    Devuelve una lista de listas, cada una con mnem y op en str.
+    """
     nroLinea = 0
     programaEnListas = []
     for lineas in programaEnLineas:
@@ -109,9 +118,6 @@ def conviertoLineasEnListas(programaEnLineas: list) -> list:
                 quitarComas(linea)
                 programaEnListas.append(linea)
                 nroLinea += 1
-            # 
-            # TODO identificar \\ ASM
-            #
     return programaEnListas
 
 
@@ -127,16 +133,47 @@ def procesarDirectiva(linea: list):
 
 
 def guardarConstante(linea: list):
-    const = linea[0]
+    """
+    Decodifica la constante a guardar ubicandola en saltos (misma tabla que rotulos -> evitar suplicados)
+    o en strings.
+    En esta etapa los string se guardan como strings, despues deben ser reemplazados por su
+    correspondiente valor de mem dentro del CS cuando se termine de procesar el archivo por primera vez.
+    -> valorConstStrings()
+    """
+    const = linea[0].upper()
     valor = linea[2]
-    if valor.isnumeric():
-        valor = int(valor)
+    # si duplicado -> error: no generar imagen
+    if const in saltos or const in strings:
+        # TODO como indicamos el numero de linea para el error si al ser CONST la salteamos ?
+        errores[-1] = 3
+    elif valor.isnumeric():
+        saltos[const] = int(valor)
     else:
-        baseVal = base[valor[0]]
-        if baseVal != "'":
-            valor = int(valor[1:], baseVal)
-    
-    constantes[const] = valor
+        baseOp = valor[0]
+        if baseOp == "'":
+            valorOp = valor.replace("'","")
+            if len(valorOp) == 0:
+                valorOp = ' '
+            if len(valorOp) == 1:
+                valorOp = ord(valorOp)
+                saltos[const] = valorOp
+            else:
+                strings[const] = [valorOp, -1]
+        else:
+            valorOp = int(valor[1:], base[baseOp])
+            saltos[const] = valorOp
+
+
+def valorConstStrings(programaEnListas):
+    """
+    Determina las ubicacion en el DS de cada string.
+    Actualiza el CS.
+    """
+    pos = len(programaEnListas) - 1
+    for k, v in strings.items():
+        strings[k][1] = pos + 1
+        pos = pos + len(v[0]) + 1
+    headers["CODE"] = pos + 1
 
 
 def quitarComas(linea: list) -> list:
@@ -147,9 +184,13 @@ def quitarComas(linea: list) -> list:
 
 
 def generoListaFinal(programaEnListas):
-    """Devuelve una lista de tuplas con la linea decodificada"""
+    """
+    Devuelve una lista de tuplas con la linea decodificada.
+    """
     numLinea = 0
     programaFinal = []
+    # reemplazo los string por sus valores adecuados dentro del CS.
+    valorConstStrings(programaEnListas)
     for lista in programaEnListas:
         programaFinal.append(decodificoLinea(lista, numLinea))
         numLinea += 1
@@ -173,7 +214,9 @@ def generoCodigo(programaFinal):
 
 
 def buscoRotuloYComentario(linea: list, nroLinea: int) -> list:
-    """Elimina comentarios y rotulos agregandolos a sus correspondientes dict"""
+    """
+    Elimina comentarios y rotulos agregandolos a sus correspondientes dict.
+    """
     # El rotulo solo pueden estar al inicio de una linea
     if re.search(":$", linea[0]) != None:
         rotulo = linea.pop(0)
@@ -208,7 +251,6 @@ def decodificoLinea(linea: list, numLinea: int) -> tuple:
         # Obtengo la cantidad de parametros que efectivamente tengo
         cantidadOperandosEncontrados = len(linea)-1
         # verificamos que la cantidad de operandos coincide con los encontrados
-
         valorOperandos = []
         tipoDeOperandos = []
         operandos = []
@@ -303,7 +345,6 @@ def generaValorCodificado(codMnemonico, cantidadOperandos, tipoOperandos, operan
 
 
 # Errores de truncamiento -> print
-
 def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, tipoOperando2, numLinea):
     if operando1 & 0xFFF != operando1:
         print("Warning... truncado de operando en linea " + str(numLinea + 1) + ".")
@@ -337,6 +378,7 @@ def operacion0Parametros(codigoOperacion):
 
 
 def generoListasDeStrings(codigos, programaFull):
+    # TODO mostrar \\ASM y EQU ?
     texto = []
     megaTexto = ""
     for i in range(len(codigos)):
@@ -370,3 +412,25 @@ def generoListasDeStrings(codigos, programaFull):
         texto.append(lineaDeTexto)
     return texto, megaTexto
 
+
+def agregarInfoHeaders(arr: list):
+    """
+    Agregar headers al arreglo antes de convertilo en numpy arr.
+    """
+    arr.insert(0, 0x4D563231)
+    arr.insert(1, headers["DATA"])
+    arr.insert(2, headers["STACK"])
+    arr.insert(3, headers["EXTRA"])
+    arr.insert(4, headers["CODE"])
+
+
+def agregarStringsDS(arr: list):
+    """
+    Agregar strings al CS.
+    """
+    lista_str = list(strings.values())
+    lista_str.sort(key=lambda x: x[1])
+    for string, _ in lista_str:
+        for char in string:
+            arr.append(ord(char))
+        arr.append(0)

@@ -1,6 +1,5 @@
 import numpy as np
 import utilidades as fn
-from pprint import pprint
 
 
 def main(argv):
@@ -52,6 +51,10 @@ def main(argv):
 
     if not fn.errores:
         # TODO agregar headers in numpyCod
+        # fn.agregarInfoHeaders(codigo)
+        # TODO agregar strings (van en DS)
+        # fn.agregarStringsDS(codigo)
+        
         numpyCod = np.array(codigo)
         numpyCod = numpyCod.astype(np.int32)
         filename = pathParaGuardar
