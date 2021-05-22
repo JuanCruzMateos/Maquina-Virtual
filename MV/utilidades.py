@@ -69,6 +69,7 @@ strings = {
 }
 
 # rotulos y constantes no string comparten la misma tabla; string se tratan aparte por simplicidad
+
 saltos = {
     # rotulo: nroLinea
 }
@@ -172,7 +173,7 @@ def guardarConstante(linea: list):
     if const in saltos or const in strings:
         # TODO como indicamos el numero de linea para el error si al ser CONST la salteamos ?
         errores[-1] = 3
-    elif valor.isnumeric():
+    elif valor.isnumeric() or (valor[0] == '-' and valor[1:].isnumeric()):
         saltos[const] = int(valor)
     else:
         baseOp = valor[0]
@@ -301,7 +302,7 @@ def cambioBase(operando, numLinea):
     if operando[0] in base:
         # obtengo la base
         baseOperando = base[operando[0]]
-        # descarto el primer valor
+        # descarto el primer valor que indica la base
         operandoAux = operando[1:]
         # cuando son ASCII pueden tener una comilla mas, o ser solo una comilla '
         if baseOperando == "ASCII":
@@ -309,13 +310,9 @@ def cambioBase(operando, numLinea):
                 operandoAux = ' '
             else:
                 operandoAux = operandoAux[:-1]
-        # if (operandoAux[0] == '-' and operandoAux[1:].isnumeric()) or operandoAux.isnumeric():
-        elif operandoAux[0] == '-' and operandoAux[1:].isnumeric():
-            baseOperando = 10
-            operandoAux = operandoAux[:]
     # sino estan en la lista solo quedan dos opciones
     # opcion 1 --> que sea un valor decimal puro
-    elif (operando[0] == '-' and operando[1:].isnumeric()) or operando.isnumeric():
+    elif operando.isnumeric() or (operando[0] == '-' and operando[1:].isnumeric()):
         baseOperando = 10
         operandoAux = operando[:]
     # opcion 2 --> que sea una etiqueta
