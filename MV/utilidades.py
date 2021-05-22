@@ -32,6 +32,9 @@ hashmap = {
     'AND' : [9, 2],
     'OR'  : [10, 2],
     'XOR' : [11, 2],
+    'SLEN': [12, 2],
+    'SMOV': [13, 2],
+    'SCMP': [14, 2],
     'SYS' : [240, 1],
     'JMP' : [241, 1],
     'JZ'  : [242, 1],
@@ -44,6 +47,10 @@ hashmap = {
     'LDH' : [249, 1],
     'RND' : [250, 1],
     'NOT' : [251, 1],
+    'PUSH': [252, 1],
+    'POP' : [253, 1],
+    'CALL': [254, 1],
+    'RET' : [4080, 0],
     'STOP': [4081, 0]
 }
 
@@ -102,11 +109,12 @@ comentarios = {
 
 # TODO: nuevos errores -> simbolo duplicado y no se encuentra simbolo
 tipos_errores = [
-    "Error sintaxis.", 
+    "Error sintaxis: Mnemotico desconocido.", 
     "No se encuentra rotulo.",
     "Cantidad de operandos erronea.",
     "Simbolo duplicado.",
-    "No se encuentra simbolo."
+    "No se encuentra simbolo.",
+    "Valor inapropiado en directiva"
 ]
 
 errores = {
@@ -185,7 +193,9 @@ def procesarDirectiva(linea: list):
     linea = linea[1:]
     for directiva in linea:
         segmento, tam = directiva.split("=")
-        headers[segmento] = int(tam)
+        headers[segmento.upper()] = int(tam)
+        if int(tam) < 0 or int(tam) > 65535:
+            errores[-2] = 5
 
 
 # TODO nuevo: guarda const
@@ -282,9 +292,17 @@ def decodificoLinea(linea: list, numLinea: int) -> tuple:
             elif linea[-3] == "'" and linea[-2] == "'":
                 operandos = ["' '", linea[4]]
             else:
-                aux = ''.join(linea[2:])
-                if re.search("(?i)[\\[][A-F][X]", aux) != None:
-                    operandos = [linea[1],  aux]
+                if "[" in linea and "]" in linea:
+                    ini = linea.index("[")
+                    fin = linea.index("]")
+                    aux = ''.join(linea[ini:fin+1])
+                    if ini == 1:
+                        operandos = [aux, linea[-1]]
+                    elif ini == 2:
+                        operandos = [linea[1], aux]
+                    else:
+                        errores[numLinea] = 2
+                        return numLinea, None, None, None, None, None, None, None
                 else:
                     errores[numLinea] = 2
                     return numLinea, None, None, None, None, None, None, None
@@ -314,7 +332,7 @@ def generoCodigo(programaFinal):
 
 
 # TODO: agrega consideracion para operando indirecto
-def devuelveTipoOperandoYValorDecimal(operando, numLinea):
+def devuelveTipoOperandoYValorDecimal(operando: str, numLinea: int):
     # verificamos si el operando es un registro
     # devuelve tipo = 1 y valor del registro
     if operando.upper() in registros:
@@ -324,7 +342,7 @@ def devuelveTipoOperandoYValorDecimal(operando, numLinea):
     if re.search("\\[", operando):
         ini = operando.index("[")
         fin = operando.index("]")
-        if re.search("(?i)[A-F][X]", operando) == None:
+        if re.search("(?i)[A-H]|[X]|[B]|[P]|[S]", operando) == None or re.search("[%#@]", operando) != None:
             return 2, cambioBase(operando[ini+1:fin], numLinea)
         else:
             return 3, valorOperandoIndirecto(operando, numLinea)
@@ -339,8 +357,10 @@ def valorOperandoIndirecto(operando, numLinea):
     Devuelve el valor del operando indirecto.
     """
     # re.split('[\+-]', 'BX+100')
+    # print("operando antes de split en valorOperandoIndirecto", operando)
     operando = ''.join(operando.split())
     operando = operando.replace('[','').replace(']','')
+    # print("operando antes de split en valorOperandoIndirecto desoues de split" ,operando.upper())
     if len(operando) == 2:
         reg = registros[operando.upper()]
         offset = 0
@@ -348,7 +368,7 @@ def valorOperandoIndirecto(operando, numLinea):
         reg = registros[operando[:2].upper()]
         if operando[3:].upper() in saltos:
             offset = saltos[operando[3:].upper()]
-            if operando[3] == '-':
+            if operando[2] == '-':
                 offset *= -1
         elif operando[3:].isnumeric():
             offset = int(operando[2:])
@@ -467,10 +487,10 @@ def generoListasDeStrings(codigos, programaFull):
             op1 = programaFull[i][6][0]
             op2 = programaFull[i][6][1]
             op1 = '{0: >6}'.format(op1)
-            op2 = '{0: >6}'.format(op2)
+            op2 = '{0: >8}'.format(op2)
             ope = op1 + ", " + op2
         elif programaFull[i][3] == 1:
-            ope = programaFull[i][6][0]
+            ope = '{0: >6}'.format(programaFull[i][6][0])
         else:
             ope = ""
         ope = '{0: <15}'.format(ope)
