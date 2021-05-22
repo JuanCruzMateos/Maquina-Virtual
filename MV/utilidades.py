@@ -1,6 +1,23 @@
 import re
 import numpy as np
 
+# Noe:
+# cosas implementadas:
+#     - directivas \\ASM
+#     - equ           
+#     - strings
+#     - reconocimiento de errores de equ y strings
+#     - operando indirecto
+#     - headers y strings en CS -> las funciones estan implementadas pero comentadas en main.py para poder seguir
+#       usando el ejecutor como esta para ir probando las cosas nuevas agregadas
+#       En la carpeta ASM hay un archivo que se llama test.asm que estaba usando para probar las cosas nuevas.
+#       Es re basico y no tiene mucho sentido lo que hace pero sirve para probar errorres y que el codigo en hexa sea correcto 
+# obs: te marque con un TODO para que las encuentres facil las funciones nuevas y en las que agregue cosas.
+
+# cosas que faltan:
+#     - agregar a hashmap las instrucciones nuevas SLEN, SMOV, SCMP, RND
+#     - agregar funciones de uso de la pila
+
 # mnem : [codigo, nro operandos]
 hashmap = {
     'MOV' : [0, 2],
@@ -64,12 +81,13 @@ base = {
     "'": "ASCII"
 }
 
+# TODO: nuevo
 strings = {
     # tag: [string, #mem]
 }
 
+# TODO: ahora guarda ctes no string tambien
 # rotulos y constantes no string comparten la misma tabla; string se tratan aparte por simplicidad
-
 saltos = {
     # rotulo: nroLinea
 }
@@ -82,10 +100,18 @@ comentarios = {
     # nroLinea(int): comentario(str)
 }
 
-tipos_errores = ["Error sintaxis.", "No se encuentra rotulo.",
-                 "Cantidad de operandos erronea.", "Simbolo duplicado."]
+# TODO: nuevos errores -> simbolo duplicado y no se encuentra simbolo
+tipos_errores = [
+    "Error sintaxis.", 
+    "No se encuentra rotulo.",
+    "Cantidad de operandos erronea.",
+    "Simbolo duplicado.",
+    "No se encuentra simbolo."
+]
 
-errores = {}
+errores = {
+    # nroLinea: tipo (index tipos_errores)
+}
 
 
 def abrirAsmFile(nombreArchivo: str) -> list:
@@ -99,6 +125,7 @@ def abrirAsmFile(nombreArchivo: str) -> list:
     return programaEnLineas
 
 
+# TODO: nuevo -> procesa constantes y directivas \\ASM
 def conviertoLineasEnListas(programaEnLineas: list) -> list:
     """
     Devuelve una lista de listas, cada una con mnem y op en str.
@@ -121,6 +148,7 @@ def conviertoLineasEnListas(programaEnLineas: list) -> list:
     return programaEnListas
 
 
+# TODO: verifica que el rotulo no este repetido y que no sea una const
 def buscoRotuloYComentario(linea: list, nroLinea: int) -> list:
     """
     Elimina comentarios y rotulos agregandolos a sus correspondientes dict.
@@ -148,6 +176,7 @@ def buscoRotuloYComentario(linea: list, nroLinea: int) -> list:
     return linea
 
 
+# TODO nuevo: interpreta directiva \\ASM
 def procesarDirectiva(linea: list):
     """
     Recive una lista con la linea,ej: ['\\ASM', 'DATA=10', 'EXTRA=3000', 'STACK=5000'].
@@ -159,6 +188,7 @@ def procesarDirectiva(linea: list):
         headers[segmento] = int(tam)
 
 
+# TODO nuevo: guarda const
 def guardarConstante(linea: list):
     """
     Decodifica la constante a guardar ubicandola en saltos (misma tabla que rotulos -> evitar suplicados)
@@ -191,6 +221,7 @@ def guardarConstante(linea: list):
             saltos[const] = valorOp
 
 
+# TODO nuevo: determina pos de strings en DS y actualiza headers
 def valorConstStrings(programaEnListas):
     """
     Determina las ubicacion en el DS de cada string.
@@ -210,6 +241,7 @@ def quitarComas(linea: list) -> list:
             linea[i] = linea[i].replace(',', '')
 
 
+# TODO: nuevo -> antes de procesar la lista final analizo los strings para que a que posision del DS le corresponden
 def generoListaFinal(programaEnListas):
     """
     Devuelve una lista de tuplas con la linea decodificada.
@@ -224,6 +256,8 @@ def generoListaFinal(programaEnListas):
     return programaFinal
 
 
+# TODO: a partir de linea 284 verifica si se da el caso de un operando indirecto con espacios irregulares
+# i.e.: [  ax +    vector ] -> daria error por cant operandos erronea cuando es correcto; lo salvo
 def decodificoLinea(linea: list, numLinea: int) -> tuple:
     # identificamos si el mnemonico existe
     mnemonico = linea[0].upper()
@@ -248,13 +282,12 @@ def decodificoLinea(linea: list, numLinea: int) -> tuple:
             elif linea[-3] == "'" and linea[-2] == "'":
                 operandos = ["' '", linea[4]]
             else:
-                errores[numLinea] = 2
-                return numLinea, None, None, None, None, None, None, None
-        # Si no hay error en la cantidad de parametros, paso a decodificarlos
-        # valorOperandos = []
-        # tipoDeOperandos = []
-        # operandos = []
-        # if cantidadOperandosNecesarios == 1 or cantidadOperandosNecesarios == 2:
+                aux = ''.join(linea[2:])
+                if re.search("(?i)[\\[][A-F][X]", aux) != None:
+                    operandos = [linea[1],  aux]
+                else:
+                    errores[numLinea] = 2
+                    return numLinea, None, None, None, None, None, None, None
         else:
             operandos = linea[1:]
         for operando in operandos:
@@ -280,20 +313,49 @@ def generoCodigo(programaFinal):
     return codigos
 
 
+# TODO: agrega consideracion para operando indirecto
 def devuelveTipoOperandoYValorDecimal(operando, numLinea):
     # verificamos si el operando es un registro
     # devuelve tipo = 1 y valor del registro
     if operando.upper() in registros:
         return 1, registros[operando.upper()]
-    # Si no es un registro, verificamos si es un operador directo
+    # Si no es un registro, verificamos si es un operador directo o indirecto
     # Si es devuelve tipo = 2, y valor a reemplazar
     if re.search("\\[", operando):
         ini = operando.index("[")
         fin = operando.index("]")
-        return 2, cambioBase(operando[ini+1:fin], numLinea)
+        if re.search("(?i)[A-F][X]", operando) == None:
+            return 2, cambioBase(operando[ini+1:fin], numLinea)
+        else:
+            return 3, valorOperandoIndirecto(operando, numLinea)
     # Sino, es un valor inmediato
     # Devuelve tipo = 0 y el valor a reemplazar
     return 0, cambioBase(operando, numLinea)
+
+
+# TODO nuevo: interpreta valor del operando indirecto
+def valorOperandoIndirecto(operando, numLinea):
+    """
+    Devuelve el valor del operando indirecto.
+    """
+    # re.split('[\+-]', 'BX+100')
+    operando = ''.join(operando.split())
+    operando = operando.replace('[','').replace(']','')
+    if len(operando) == 2:
+        reg = registros[operando.upper()]
+        offset = 0
+    else:
+        reg = registros[operando[:2].upper()]
+        if operando[3:].upper() in saltos:
+            offset = saltos[operando[3:].upper()]
+            if operando[3] == '-':
+                offset *= -1
+        elif operando[3:].isnumeric():
+            offset = int(operando[2:])
+        else:
+            errores[numLinea] = 4
+            return -1
+    return (offset << 4) | reg
 
 
 def cambioBase(operando, numLinea):
@@ -347,7 +409,6 @@ def generaValorCodificado(codMnemonico, cantidadOperandos, tipoOperandos, operan
     return codigo
 
 
-# Errores de truncamiento -> print
 def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, tipoOperando2, numLinea):
     if operando1 & 0xFFF != operando1:
         print("Warning... truncado de operando en linea " + str(numLinea + 1) + ".")
@@ -358,18 +419,22 @@ def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, t
     a = np.left_shift(operando1 & 0xFFF, 12, dtype=np.int64)
     tipoB = np.left_shift(tipoOperando2 & 0x003, 24, dtype=np.int64)
     b = operando2 & 0xFFF
-    codigoFull = codigo | a | b | tipoA | tipoB
+    codigoFull = codigo | tipoA | tipoB | a | b 
     return codigoFull
 
 
+# TODO completo ceros si es de tipo indirecto (tipo == 3)
 def operacion1Parametro(codigoOperacion, operando1, tipoOperando1, numLinea):
     if operando1 & 0xFFFF != operando1:
         print("Warning... truncado de operando en linea " + str(numLinea + 1) + ".")
     unos = 15 << 28
     codigo = (codigoOperacion & 0x00F) << 24
     tipoA = tipoOperando1 << 22
-    a = operando1 & 0xFFFF
-    codigoFull = codigo | a | tipoA | unos
+    if tipoOperando1 == 3:
+        a = operando1 & 0x0FFF
+    else:
+        a = operando1 & 0xFFFF
+    codigoFull = unos | codigo | tipoA | a
     return codigoFull
 
 
@@ -380,8 +445,9 @@ def operacion0Parametros(codigoOperacion):
     return codigoFull
 
 
+# TODO: esto si es una duda: mostrar \\ASM y EQU ??? o saltear ?
+# en una lina hay un rotulo duplicado muestro un -Err-
 def generoListasDeStrings(codigos, programaFull):
-    # TODO mostrar \\ASM y EQU ?
     texto = []
     megaTexto = ""
     for i in range(len(codigos)):
@@ -418,6 +484,7 @@ def generoListasDeStrings(codigos, programaFull):
     return texto, megaTexto
 
 
+# TODO nuevo: agregar headers antes de hacer el np array
 def agregarInfoHeaders(arr: list):
     """
     Agregar headers al arreglo antes de convertilo en numpy arr.
@@ -429,6 +496,7 @@ def agregarInfoHeaders(arr: list):
     arr.insert(4, headers["CODE"])
 
 
+# TODO nuevo: agrego strings al DS antes del numpy array
 def agregarStringsDS(arr: list):
     """
     Agregar strings al CS, un char por celda + '\0'.

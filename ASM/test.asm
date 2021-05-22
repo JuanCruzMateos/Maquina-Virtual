@@ -14,4 +14,11 @@ hola:    sys    1
     mov    dx, uno
 DOS     EQU #2
     sys    DOS
+    mov    ax, 5
+    mov    bx, [   ax    +   dos  ]
+    mov    [5], bx
+cinco       equ 5
+    mov     dx, cinco
+    sys     dos
+    jp      [ex+15]
     stop
