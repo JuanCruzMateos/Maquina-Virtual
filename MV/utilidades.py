@@ -1,5 +1,4 @@
 import re
-from typing import OrderedDict
 import numpy as np
 
 # mnem : [codigo, nro operandos]
@@ -69,7 +68,7 @@ strings = {
     # tag: [string, #mem]
 }
 
-# rotulos y constantes no string comparten la misma tabla
+# rotulos y constantes no string comparten la misma tabla; string se tratan aparte por simplicidad
 saltos = {
     # rotulo: nroLinea
 }
@@ -121,6 +120,33 @@ def conviertoLineasEnListas(programaEnLineas: list) -> list:
     return programaEnListas
 
 
+def buscoRotuloYComentario(linea: list, nroLinea: int) -> list:
+    """
+    Elimina comentarios y rotulos agregandolos a sus correspondientes dict.
+    """
+    # El rotulo solo pueden estar al inicio de una linea
+    if re.search(":$", linea[0]) != None:
+        rotulo = linea.pop(0)
+        rotulo = rotulo.replace(':', '').upper()
+        if rotulo in strings or rotulo in saltos:
+            errores[nroLinea] = 3
+        else:    
+            saltos[rotulo] = nroLinea
+            etiqueta[nroLinea] = rotulo
+    # Ahora busco comentarios
+    i = 0
+    while i < len(linea) and re.search("^;", linea[i]) == None:
+        i += 1
+    # si hay un comentario, armo un string con todos los componentes de la
+    # lista que estan luego de la palabra que tiene punto y coma
+    if i < len(linea):
+        linea[i] = linea[i].replace(';', '')
+        comentario = " ".join(linea[i:])
+        comentarios[nroLinea] = comentario
+        linea = linea[:i]
+    return linea
+
+
 def procesarDirectiva(linea: list):
     """
     Recive una lista con la linea,ej: ['\\ASM', 'DATA=10', 'EXTRA=3000', 'STACK=5000'].
@@ -152,9 +178,9 @@ def guardarConstante(linea: list):
         baseOp = valor[0]
         if baseOp == "'":
             valorOp = valor.replace("'","")
-            if len(valorOp) == 0:
-                valorOp = ' '
-            if len(valorOp) == 1:
+            if len(valorOp) < 2:
+                if len(valorOp) == 0:
+                    valorOp = ' '
                 valorOp = ord(valorOp)
                 saltos[const] = valorOp
             else:
@@ -197,46 +223,6 @@ def generoListaFinal(programaEnListas):
     return programaFinal
 
 
-def generoCodigo(programaFinal):
-    codigos = []
-    for linea in programaFinal:
-        numLinea = linea[0]
-        if numLinea in errores.keys() and errores[numLinea] != 1:
-            # error de mnemotico
-            if errores[numLinea] == 0:
-                codigo = 0xFFFFFFFF
-            else:
-                codigo = 0xEEEEEEEE
-        else:
-            codigo = generaValorCodificado(linea[2], linea[3], linea[5], linea[4], numLinea)
-        codigos.append(codigo)
-    return codigos
-
-
-def buscoRotuloYComentario(linea: list, nroLinea: int) -> list:
-    """
-    Elimina comentarios y rotulos agregandolos a sus correspondientes dict.
-    """
-    # El rotulo solo pueden estar al inicio de una linea
-    if re.search(":$", linea[0]) != None:
-        rotulo = linea.pop(0)
-        rotulo = rotulo.replace(':', '').upper()
-        saltos[rotulo] = nroLinea
-        etiqueta[nroLinea] = rotulo
-    # Ahora busco comentarios
-    i = 0
-    while i < len(linea) and re.search("^;", linea[i]) == None:
-        i += 1
-    # si hay un comentario, armo un string con todos los componentes de la
-    # lista que estan luego de la palabra que tiene punto y coma
-    if i < len(linea):
-        linea[i] = linea[i].replace(';', '')
-        comentario = " ".join(linea[i:])
-        comentarios[nroLinea] = comentario
-        linea = linea[:i]
-    return linea
-
-
 def decodificoLinea(linea: list, numLinea: int) -> tuple:
     # identificamos si el mnemonico existe
     mnemonico = linea[0].upper()
@@ -250,10 +236,10 @@ def decodificoLinea(linea: list, numLinea: int) -> tuple:
         cantidadOperandosNecesarios = hashmap[mnemonico][1]
         # Obtengo la cantidad de parametros que efectivamente tengo
         cantidadOperandosEncontrados = len(linea)-1
-        # verificamos que la cantidad de operandos coincide con los encontrados
         valorOperandos = []
         tipoDeOperandos = []
         operandos = []
+        # verificamos que la cantidad de operandos coincide con los encontrados
         if cantidadOperandosEncontrados != cantidadOperandosNecesarios:
             # pueden ser dos comillas separadas por un espacio
             if linea[-1] == "'" and linea[-2] == "'":
@@ -275,6 +261,22 @@ def decodificoLinea(linea: list, numLinea: int) -> tuple:
             valorOperandos.append(opVal)
             tipoDeOperandos.append(opTipo)
         return numLinea, mnemonico, codigoMnemonico, cantidadOperandosNecesarios, valorOperandos, tipoDeOperandos, operandos
+
+
+def generoCodigo(programaFinal):
+    codigos = []
+    for linea in programaFinal:
+        numLinea = linea[0]
+        if numLinea in errores.keys() and errores[numLinea] != 1:
+            # error de mnemotico
+            if errores[numLinea] == 0:
+                codigo = 0xFFFFFFFF
+            else:
+                codigo = 0xEEEEEEEE
+        else:
+            codigo = generaValorCodificado(linea[2], linea[3], linea[5], linea[4], numLinea)
+        codigos.append(codigo)
+    return codigos
 
 
 def devuelveTipoOperandoYValorDecimal(operando, numLinea):
@@ -326,8 +328,12 @@ def cambioBase(operando, numLinea):
         else:
             valor = int(operandoAux, baseOperando)
     else:
+        # puede ser un rotulo o una constrante
         if operando.upper() in saltos:
             valor = saltos[operando.upper()]
+        # puede ser un string
+        elif operando.upper() in strings:
+            valor = strings[operando.upper()]
         else:
             valor = 0xFFF  # no se encuentra el rotulo -> reemplazo por valor
             errores[numLinea] = 1
@@ -386,6 +392,8 @@ def generoListasDeStrings(codigos, programaFull):
         codigoEnHexa = f"{(codigos[i] >> 24) & 0xFF:02X} {(codigos[i] >> 16) & 0xFF:02X} {(codigos[i] >> 8) & 0xFF:02X} {codigos[i] & 0xFF:02X} {' '*11}"
         if i in etiqueta.keys():
             lin = etiqueta[i]+":"
+        elif i in errores and errores[i] == 3:
+            lin = "-Err-"
         else:
             lin = ""
         lin = '{0: <8}'.format(lin)
@@ -397,18 +405,18 @@ def generoListasDeStrings(codigos, programaFull):
             op2 = programaFull[i][6][1]
             op1 = '{0: >6}'.format(op1)
             op2 = '{0: >6}'.format(op2)
-            ope = op1+", " + op2
+            ope = op1 + ", " + op2
         elif programaFull[i][3] == 1:
             ope = programaFull[i][6][0]
         else:
             ope = ""
         ope = '{0: <15}'.format(ope)
         if i in comentarios.keys():
-            coment = ";"+comentarios[i]
+            coment = ";" + comentarios[i]
         else:
             coment = ""
-        lineaDeTexto = lineaEnHexa+" "+codigoEnHexa+" " + lin+" "+mnemonico+" "+ope+" " + " "+coment
-        megaTexto += lineaDeTexto+"\n"
+        lineaDeTexto = lineaEnHexa+" "+codigoEnHexa+" "+lin+" "+mnemonico+" "+ope+" "+" "+coment
+        megaTexto += lineaDeTexto + "\n"
         texto.append(lineaDeTexto)
     return texto, megaTexto
 
@@ -426,7 +434,7 @@ def agregarInfoHeaders(arr: list):
 
 def agregarStringsDS(arr: list):
     """
-    Agregar strings al CS.
+    Agregar strings al CS, un char por celda + '\0'.
     """
     lista_str = list(strings.values())
     lista_str.sort(key=lambda x: x[1])

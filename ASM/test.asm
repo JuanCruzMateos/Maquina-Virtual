@@ -1,14 +1,17 @@
     \\ASM DATA=10 EXTRA=3000 STACK=5000
-HOLA  EQU   1
-    mov    [1], 0
+UNO  EQU   %1
+UNO EQU %3
+inicial equ %A
+    mov    [1], inicial
     mov    [2], %1
     add    [1], [2]
     mov    ax, %001
     mov    dx, 3
-    mov    cx, 1
-    sys    1
+    mov    cx, UNO
+INICIAL:    sys    1
     add    [1], [3]
     sys    %f
     mov    dx, 1
-    sys    2
+DOS     EQU #2
+    sys    DOS
     stop

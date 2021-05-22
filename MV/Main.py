@@ -12,7 +12,7 @@ def main(argv):
         if argv[-1] == "-o":
             salidaPorPantalla = False
         else:
-            print("ERROR:" + " flag invalido. Solo [-o] es sopotado.")
+            print("ERROR:" + " flag invalido. Solo [-o] es admitido.")
             return None
     elif len(argv) > 4:
         print("ERROR:" + " numero de parametros invalido.")
@@ -54,7 +54,6 @@ def main(argv):
         # fn.agregarInfoHeaders(codigo)
         # TODO agregar strings (van en DS)
         # fn.agregarStringsDS(codigo)
-        
         numpyCod = np.array(codigo)
         numpyCod = numpyCod.astype(np.int32)
         filename = pathParaGuardar

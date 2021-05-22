@@ -23,7 +23,7 @@ void (*instruccion_un_op[]) (int *)         = {SYS, JMP,  JZ,   JP,  JN, JNZ, JN
 char *tags[][12] = {{"STOP",    "",    "",     "",    "",    "",    "",    "",    "",    "",   "",    ""},
                     {"SYS" , "JMP",  "JZ",   "JP",  "JN", "JNZ", "JNP", "JNN", "LDL", "LDH","RND", "NOT"},
                     {"MOV" , "ADD", "SUB", "SWAP", "MUL", "DIV", "CMP", "SHL", "SHR", "AND", "OR", "XOR"},
-                    {"AX"  ,  "BX",  "CX",   "DX",  "EX",  "FX",    "",    "",    "",    "",   "",   "" }};
+                    {"AC"  , "AX"  ,  "BX",  "CX",   "DX",  "EX",  "FX",  "",    "",    "",    "",   "" }};
 
 
 void load_ram(FILE *arch, int *mem, int *DS) {
@@ -253,8 +253,6 @@ void XOR(int *a, int *b) {
 }
 
 
-// REVISAR IMPLEMENTACION DE SCAN_CHAR !!!
-
 void sys_read() {
     int has_prompt = (registro[10] & 0x800) == 0;
     int formato  = registro[10] & 0xF;
@@ -333,7 +331,7 @@ void disassembler() {
     printf("\n");
     for (i = inicio; i < fin; i++) {
         op = decodificar_operacion(ram[i]);
-        i == registro[5]-1 ? sprintf(mem, ">[%04d]", i) : sprintf(mem, " [%04d]", i);
+        i == registro[5] ? sprintf(mem, ">[%04d]", i) : sprintf(mem, " [%04d]", i);
         sprintf(hex, "%02X %02X %02X %02X", (ram[i] >> 24) & 0xFF, (ram[i] >> 16) & 0xFF, (ram[i] >> 8) & 0xFF, ram[i] & 0xFF);
         // mnemotico
         if (0 <= op.codigo_op && op.codigo_op <= 11)
@@ -346,13 +344,13 @@ void disassembler() {
         switch (op.tipo_a) {
             case -1: sprintf(op_1, "%s", ""); break;
             case  0: sprintf(op_1, "%d", op.valor_a); break;
-            case  1: sprintf(op_1, "%s", tags[3][op.valor_a - 10]); break;
+            case  1: sprintf(op_1, "%s", tags[3][op.valor_a - 9]); break;
             case  2: sprintf(op_1, "[%d]", op.valor_a); break;
         }
         // operando b
         switch (op.tipo_b) {
             case  0: sprintf(op_2, "%d", op.valor_b); break;
-            case  1: sprintf(op_2, "%s", tags[3][op.valor_b - 10]); break;
+            case  1: sprintf(op_2, "%s", tags[3][op.valor_b - 9]); break;
             case  2: sprintf(op_2, "[%d]", op.valor_b); break;
         }
         printf("%s %s    %2d: %5s %5s %s", mem, hex, i+1, mnem, " ", op_1);
@@ -374,7 +372,7 @@ void sys_breakpoint() {
         if (flags.d)
             disassembler();
         if (flags.b) {
-            printf("[%04d] cmd: ", registro[5] - 1);
+            printf("[%04d] cmd: ", registro[5]);
             fgets(buffer, 15, stdin);
             if (buffer[0] == '\n')
                 saltear_bp = 1;
@@ -395,12 +393,16 @@ void sys_breakpoint() {
 
 
 void SYS(int *a) {
-    if (*a == 1)  // scanf
-        sys_read();
-    else if (*a == 2)  // printf
-        sys_write();
-    else  // breakpoint
-        sys_breakpoint();
+    switch (*a) {
+        case  1: sys_read();    break;
+        case  2: sys_write();   break;
+        case  3: /* str_read */ break;
+        case  4: /* str_write*/ break;
+        case  5: /* new */ break;
+        case  6: /* free */ break;
+        case  7: system("cls"); break;
+        case 15: sys_breakpoint(); break;
+    }
 }
 
 
