@@ -489,7 +489,7 @@ def generoListasDeStrings(codigos, programaFull):
             coment = ";" + comentarios[i]
         else:
             coment = ""
-        lineaDeTexto = lineaEnHexa+" "+codigoEnHexa+" "+lin+" "+mnemonico+" "+ope+" "+" "+coment
+        lineaDeTexto = lineaEnHexa+" "+codigoEnHexa+" "+lin+" "+mnemonico+" "+ope+" "+ " " * 6 +coment
         megaTexto += lineaDeTexto + "\n"
         texto.append(lineaDeTexto)
     return texto, megaTexto

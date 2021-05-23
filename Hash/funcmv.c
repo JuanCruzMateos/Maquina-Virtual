@@ -1,50 +1,44 @@
-#include "func_mv.h"
-
-// registros:
-//  0 - DS
-//  5 - IP
-//  8 - CC
-//  9 - AC
-// 10 - AX
-// 11 - BX
-// 12 - CX
-// 13 - DX
-// 14 - EX
-// 15 - FX
-int registro[CANT_REG] = {0};
-// ram
-int ram[CANT_RAM] = {0};
-
-flags_t flags;
-
-void (*instruccion_dos_op[]) (int *, int *) = {MOV, ADD, SUB, SWAP, MUL, DIV, CMP, SHL, SHR, AND,  OR, XOR};
-void (*instruccion_un_op[]) (int *)         = {SYS, JMP,  JZ,   JP,  JN, JNZ, JNP, JNN, LDL, LDH, RND, NOT};
+#include "funcmv.h"
 
 char *tags[][12] = {{"STOP",    "",    "",     "",    "",    "",    "",    "",    "",    "",   "",    ""},
                     {"SYS" , "JMP",  "JZ",   "JP",  "JN", "JNZ", "JNP", "JNN", "LDL", "LDH","RND", "NOT"},
                     {"MOV" , "ADD", "SUB", "SWAP", "MUL", "DIV", "CMP", "SHL", "SHR", "AND", "OR", "XOR"},
                     {"AC"  , "AX"  ,  "BX",  "CX",   "DX",  "EX",  "FX",  "",    "",    "",    "",   "" }};
 
-
-void load_ram(FILE *arch, int *mem, int *DS) {
+void load_ram(FILE *arch, memoria_t *memoria) {
     int i = 0, x;
-
     while (fread(&x, sizeof(int), 1, arch) == 1) {
-        mem[i++] = x;
+        (*memoria).ram[i++] = x;
     }
-    *DS = i;
+    memoria->registro[0] = i;
 }
 
+void get_flags(char *argv[], int argc, memoria_t *memoria) {
+    memoria->flags.b = memoria->flags.c = memoria->flags.d = 0;
+    if (argc > 2) {
+        for (int i = 2; i < argc; i++) {
+            if (strcmp(argv[i], "-b") == 0)
+                memoria->flags.b = 1;
+            else if (strcmp(argv[i], "-c") == 0)
+                memoria->flags.c = 1;
+            else if (strcmp(argv[i], "-d") == 0)
+                memoria->flags.d = 1;
+        }
+    }
+}
 
-void print_binary(int *ram, int DS) {
+void inicializar_registros(int *reg) {
+    for (int i = 0; i < CANT_REG; i++)
+        reg[i] = 0;
+}
+
+void print_binary(memoria_t memoria){
     int i = 0;
-
-    while (i < DS) {
-        printf(" [%04d] %02X %02X %02X %02X\n", i, (ram[i] >> 24) & 0xFF, (ram[i] >> 16) & 0xFF, (ram[i] >> 8) & 0xFF, ram[i] & 0xFF);
+    while (i < memoria.registro[0]) {
+        printf("[%04d] %02X %02X %02X %02X\n", i, (memoria.ram[i] >> 24) & 0xFF, (memoria.ram[i] >> 16) & 0xFF, (memoria.ram[i] >> 8) & 0xFF, memoria.ram[i] & 0xFF);
         i += 1;
     }
 }
-
 
 int cantidad_operandos(int instrucccion_hex) {
     if ((instrucccion_hex & 0xFF0FFFFF) == 0xFF000000)
@@ -55,7 +49,6 @@ int cantidad_operandos(int instrucccion_hex) {
         return 2;
 }
 
-
 int codigo_operacion(int instruccion_hex, int cant_op) {
     if (cant_op == 2)
         return (instruccion_hex >> 28) & 0xF;
@@ -64,7 +57,6 @@ int codigo_operacion(int instruccion_hex, int cant_op) {
     else
         return (instruccion_hex >> 20) & 0xFFF;
 }
-
 
 int tipo_operando_a(int instruccion_hex, int cant_op) {
     if (cant_op == 0)
@@ -75,17 +67,12 @@ int tipo_operando_a(int instruccion_hex, int cant_op) {
         return (instruccion_hex >> 26) & 0x3;
 }
 
-
 int tipo_operando_b(int instruccion_hex, int cant_op) {
     if (cant_op == 0 || cant_op == 1)
         return -1;
     else
         return (instruccion_hex >> 24) & 0x3;
 }
-
-
-// VERIFICAR NEGATIVOS
-
 
 int valor_operando_a(int instruccion_hex, int cant_op) {
     int valor;
@@ -104,7 +91,6 @@ int valor_operando_a(int instruccion_hex, int cant_op) {
     } 
 }
 
-
 int valor_operando_b(int instruccion_hex, int cant_op) {
     int valor;
 
@@ -116,8 +102,6 @@ int valor_operando_b(int instruccion_hex, int cant_op) {
         return valor;
     }
 }
-
-// ---
 
 estados setEstado(int cant_op, int tipo_a, int tipo_b) {
     estados estado;
@@ -158,7 +142,6 @@ estados setEstado(int cant_op, int tipo_a, int tipo_b) {
     return estado;
 }
 
-
 operacion decodificar_operacion(int instruccion_hex) {
     operacion op;
     int cant_op = cantidad_operandos(instruccion_hex);
@@ -172,88 +155,74 @@ operacion decodificar_operacion(int instruccion_hex) {
     return op;
 }
 
-
-void modificar_CC(int resultado) {
-    // CC == registro[8]
+void modificar_CC(int resultado, int *reg) {
     int N = resultado & 0x80000000;
     int Z = resultado == 0;
-    registro[8] = N | Z;
+    reg[8] = N | Z;
 }
 
-
-void MOV(int *a, int *b) {
+// dos operandos
+void MOV(int *a, int *b, memoria_t *mem) {
     *a = *b;
 }
 
-
-void ADD(int *a, int *b) {
+void ADD(int *a, int *b, memoria_t *mem) {
     *a += *b;
-    modificar_CC(*a);
+    modificar_CC(*a, mem->registro);
 }
 
-
-void SUB(int *a, int *b) {
+void SUB(int *a, int *b, memoria_t *mem) {
     *a -= *b;
-    modificar_CC(*a);
+    modificar_CC(*a, mem->registro);
 }
 
-
-void SWAP(int *a, int *b) {
+void SWAP(int *a, int *b, memoria_t *mem) {
     int aux = *a;
     *a = *b;
     *b = aux;
 }
 
-
-void MUL(int *a, int *b) {
+void MUL(int *a, int *b, memoria_t *mem) {
     *a *= *b;
-    modificar_CC(*a);
+    modificar_CC(*a, mem->registro);
 }
 
-
-void DIV(int *a, int *b) {
-    registro[9] = *a % *b;
-    *a = *a / *b;
-    modificar_CC(*a);
+void DIV(int *a, int *b, memoria_t *mem) {
+    mem->registro[9] = *a % *b;
+    *a /= *b;
+    modificar_CC(*a, mem->registro);
 }
 
-
-void CMP(int *a, int *b) {
-    modificar_CC(*a - *b);
+void CMP(int *a, int *b, memoria_t *mem) {
+    modificar_CC(*a - *b, mem->registro);
 }
 
-
-void SHL(int *a, int *b) {
+void SHL(int *a, int *b, memoria_t *mem) {
     *a = *a << *b;
-    modificar_CC(*a);
+    modificar_CC(*a, mem->registro);
 }
 
-
-void SHR(int *a, int *b) {
+void SHR(int *a, int *b, memoria_t *mem) {
     *a = *a >> *b;
-    modificar_CC(*a);
+    modificar_CC(*a, mem->registro);
 }
 
-
-void AND(int *a, int *b) {
+void AND(int *a, int *b, memoria_t *mem) {
     *a = *a & *b;
-    modificar_CC(*a);
+    modificar_CC(*a, mem->registro);
 }
 
-
-void OR(int *a, int *b) {
+void OR(int *a, int *b, memoria_t *mem) {
     *a = *a | *b;
-    modificar_CC(*a);
+    modificar_CC(*a, mem->registro);
 }
 
-
-void XOR(int *a, int *b) {
+void XOR(int *a, int *b, memoria_t *mem) {
     *a = *a ^ *b;
-    modificar_CC(*a);
+    modificar_CC(*a, mem->registro);
 }
 
-
-void sys_read() {
+void sys_read(int *ram, int *registro) {
     int has_prompt = (registro[10] & 0x800) == 0;
     int formato  = registro[10] & 0xF;
     int scan_char = registro[10] & 0x100;
@@ -286,8 +255,9 @@ void sys_read() {
     }
 }
 
+// verificar si el caracter es imprimible
 
-void sys_write() {
+void sys_write(int *ram, int *registro) {
     int has_prompt = (registro[10] & 0x800) == 0;
     int has_end = (registro[10] & 0x100) == 0;
     int formato = registro[10] & 0x1F;
@@ -297,9 +267,9 @@ void sys_write() {
         printf("[%04d]:", registro[13]);
     for (i = registro[13]; i < registro[13] + registro[12]; i++) {
         switch (formato) {
-            case 1:  printf("%d ", ram[i + registro[0]]); break;
-            case 4:  printf("@%08o ", ram[i + registro[0]]); break;
-            case 8:  printf("%%%08X ", ram[i + registro[0]]); break;
+            case 1:  printf("%d", ram[i + registro[0]]); break;
+            case 4:  printf("@%08o", ram[i + registro[0]]); break;
+            case 8:  printf("%%%08X", ram[i + registro[0]]); break;
             case 16: printf("%c", ram[i + registro[0]] & 0xFF); break;
             default:
                 registro[10] & 0x10 ? printf("%c ", ram[i + registro[0]] & 0xFF) : printf(" ");
@@ -313,8 +283,15 @@ void sys_write() {
     }
 }
 
+void print_registros(int *registro) {
+    printf("\nRegistros:\n");
+    printf("| DS = %15d | %20s | %20s | %20s |\n", registro[0], " ", " ", " ");
+    printf("| %20s | IP = %15d | %20s | %20s |\n", " ", registro[5], " ", " ");
+    printf("| CC = %15d | AC = %15d | AX = %15d | BX = %15d |\n", registro[8], registro[9], registro[10], registro[11]);
+    printf("| CX = %15d | DX = %15d | EX = %15d | FX = %15d |\n\n", registro[12], registro[13], registro[14], registro[15]);
+}
 
-void disassembler() {
+void disassembler(int *ram, int *registro) {
     int inicio = (registro[5] - 5 >= 0) ? registro[5] - 5 : 0;
     int fin = (registro[5] + 5 < registro[0]) ? registro[5] + 5 : registro[0];
     char mem[8], hex[12];
@@ -356,11 +333,10 @@ void disassembler() {
         printf("%s %s    %2d: %5s %5s %s", mem, hex, i+1, mnem, " ", op_1);
         (op.tipo_b == -1) ? printf("\n") : printf(", %s\n", op_2);
     }
-    print_registros();
+    print_registros(registro);
 }
 
-
-void sys_breakpoint() {
+void sys_breakpoint(int *ram, int *registro, flags_t flags) {
     static int saltear_bp = 0;
     char buffer[30];
     char *nums;
@@ -370,7 +346,7 @@ void sys_breakpoint() {
         // if (flags.c)
         //     system("cls");
         if (flags.d)
-            disassembler();
+            disassembler(ram, registro);
         if (flags.b) {
             printf("[%04d] cmd: ", registro[5]);
             fgets(buffer, 15, stdin);
@@ -385,103 +361,79 @@ void sys_breakpoint() {
                 else
                     n2 = n1;
                 for (i = n1; i <= n2; i++)
-                    printf("[%04d]: %04X %04X %12d\n", i, (ram[i] & 0xFFFF0000) >> 16, ram[i] & 0xFFFF, ram[i]);
+                    printf("[%04d]: %04X %04X %6d\n", i, (ram[i] & 0xFFFF0000) >> 16, ram[i] & 0xFFFF, ram[i]);
             }
         }
     }
 }
 
-
-void SYS(int *a) {
+// un operando
+void SYS(int *a, int *b, memoria_t *mem) {
     switch (*a) {
-        case  1: sys_read();    break;
-        case  2: sys_write();   break;
+        case  1: sys_read(mem->ram, mem->registro); break;
+        case  2: sys_write(mem->ram, mem->registro);break;
         case  3: /* str_read */ break;
         case  4: /* str_write*/ break;
         case  5: /* new */ break;
         case  6: /* free */ break;
         case  7: system("cls"); break;
-        case 15: sys_breakpoint(); break;
+        case 15: sys_breakpoint(mem->ram, mem->registro, mem->flags); break;
     }
 }
 
-
-void JMP(int *a) {
-    registro[5] = *a;
+void JMP(int *a, int *b, memoria_t *mem) {
+    mem->registro[5] = *a;
 }
 
-
-void JP(int *a) {
-    if ((registro[8] & 0x80000000) == 0)
-        registro[5] = *a;
+void JZ(int *a, int *b, memoria_t *mem) {
+    if ((mem->registro[8] & 0x1) == 1)
+        mem->registro[5] = *a;
 }
 
-
-void JN(int *a) {
-    if (registro[8] & 0x80000000)
-        registro[5]= *a;
+void JP(int *a, int *b, memoria_t *mem) {
+    if ((mem->registro[8] & 0x80000000) == 0)
+        mem->registro[5] = *a;
 }
 
-
-void JZ(int *a) {
-    // Salta a la celda indicada si el bit de cero de CC es 1
-    if (registro[8] & 0x1 == 1)
-        registro[5] = *a;
+void JN(int *a, int *b, memoria_t *mem) {
+    if (mem->registro[8] & 0x80000000)
+        mem->registro[5]= *a;
 }
 
-
-void JNZ(int *a) {
-    if ((registro[8] & 0x1) == 0)
-        registro[5] = *a;
+void JNZ(int *a, int *b, memoria_t *mem) {
+   if ((mem->registro[8] & 0x1) == 0)
+        mem->registro[5] = *a;
 }
 
-
-void JNP(int *a) {
-    // salto si no es positivo -> cero o negotivo
-    if (registro[8] & 0x80000000 || registro[8] & 0x00000001)
-        registro[5] = *a;
+void JNP(int *a, int *b, memoria_t *mem) {
+    if (mem->registro[8] & 0x80000000 || mem->registro[8] & 0x00000001)
+        mem->registro[5] = *a;
 }
 
-
-void JNN(int *a) {
-    // salta si no es negativo -> cero o positivo
-    if (registro[8] & 0x80000000 == 0) 
-        registro[5] = *a;
+void JNN(int *a, int *b, memoria_t *mem) {
+    if ((mem->registro[8] & 0x80000000) == 0) 
+        mem->registro[5] = *a;
 }
 
-
-void LDH(int *a) {
-    registro[9] = (registro[9] & 0xFFFFFFFF) | ((*a & 0xFFFF) << 16);
+void LDL(int *a, int *b, memoria_t *mem) {
+    mem->registro[9] = (mem->registro[9] & 0xFFFFFFFF) | (*a & 0xFFFF);
 }
 
-
-void LDL(int *a) {
-    registro[9] = (registro[9] & 0xFFFFFFFF) | (*a & 0xFFFF);
+void LDH(int *a, int *b, memoria_t *mem) {
+    mem->registro[9] = (mem->registro[9] & 0xFFFFFFFF) | ((*a & 0xFFFF) << 16);
 }
 
-
-void RND(int *a) {
-    // TODO: segunda parte
-    // Carga en el primer operando un número aleatorio entre 0 y el valor del segundo operando
-    // -> dos operandos ? 
-    // *a = rand();
+void RND (int *a, int *b, memoria_t *mem) {
+    // implementar
 }
 
-
-void NOT(int *a) {
+void NOT(int *a, int *b, memoria_t *mem) {
     *a = ~(*a);
-    modificar_CC(*a);
+    modificar_CC(*a, mem->registro);
 }
 
-
-void STOP() {
-    registro[5] = -1;
-}
-
-void print_registros() {
-    printf("\nRegistros:\n");
-    printf("| DS = %15d | %20s | %20s | %20s |\n", registro[0], " ", " ", " ");
-    printf("| %20s | IP = %15d | %20s | %20s |\n", " ", registro[5], " ", " ");
-    printf("| CC = %15d | AC = %15d | AX = %15d | BX = %15d |\n", registro[8], registro[9], registro[10], registro[11]);
-    printf("| CX = %15d | DX = %15d | EX = %15d | FX = %15d |\n\n", registro[12], registro[13], registro[14], registro[15]);
+// cero operandos
+// func(NULL, NULL, &mem)
+void STOP(int *a, int *b, memoria_t *mem) {
+    mem->registro[5] = -1;
 }

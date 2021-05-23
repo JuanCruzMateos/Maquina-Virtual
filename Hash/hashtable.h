@@ -1,12 +1,12 @@
-#include <stdlib.h>
+#ifndef HASH_TABLE
+#define HASH_TABLE
 
-// Puntero a funcion
-typedef void (*funct_ptr)(int *, int *, int *);
+#include <stdlib.h>
 
 // Nodo de la tabla de hash
 typedef struct nodo_hash {
     int clave;
-    funct_ptr fptr;
+    void *val;
     struct nodo_hash *sig;
 } nodo_hash;
 
@@ -16,14 +16,20 @@ typedef struct {
     nodo_hash **datos;
 } hash_table_t;
 
-
 // Crear tabla de hash
-hash_table_t *hash_crear();
+hash_table_t *hash_new();
 
 // Guarda un par clave valor
 // si key ya estaba en las key, se actualiza el par key-val con el nuevo valor de fptr
-void hash_guardar(hash_table_t *ht, int key, funct_ptr fptr);
+void hash_put(hash_table_t *ht, int key, void *val);
 
 // Obtener valor de una determinada clave
+// pre: tabla de hash creada (!= NULL)
 // @return valor || NULL si no exite la clave en el diccionario
-funct_ptr hash_obtener(hash_table_t *ht, int key);
+void *hash_get(hash_table_t *ht, int key);
+
+// pre: tabla creada
+// post: libera memoria
+void hash_delete(hash_table_t *ht);
+
+#endif // HASH_TABLE
