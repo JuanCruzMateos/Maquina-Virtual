@@ -61,9 +61,10 @@ def main(argv):
         numpyCod.tofile(fileobj)
         fileobj.close()
     else:
-        print("Errores:")
+        print(fn.Colors.RED + fn.Colors.UNDERLINE + "Errores:" + fn.Colors.NOUNDERLINE)
         for nroLinea, tipoError in fn.errores.items():
             print(f" - Linea {nroLinea:>2d}: {fn.tipos_errores[tipoError]}")
+        print(fn.Colors.RESETCOLOR)
 
 
 if __name__ == "__main__":

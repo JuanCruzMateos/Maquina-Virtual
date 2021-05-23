@@ -1,22 +1,13 @@
 import re
 import numpy as np
 
-# Noe:
-# cosas implementadas:
-#     - directivas \\ASM
-#     - equ           
-#     - strings
-#     - reconocimiento de errores de equ y strings
-#     - operando indirecto
-#     - headers y strings en CS -> las funciones estan implementadas pero comentadas en main.py para poder seguir
-#       usando el ejecutor como esta para ir probando las cosas nuevas agregadas
-#       En la carpeta ASM hay un archivo que se llama test.asm que estaba usando para probar las cosas nuevas.
-#       Es re basico y no tiene mucho sentido lo que hace pero sirve para probar errorres y que el codigo en hexa sea correcto 
-# obs: te marque con un TODO para que las encuentres facil las funciones nuevas y en las que agregue cosas.
-
-# cosas que faltan:
-#     - agregar a hashmap las instrucciones nuevas SLEN, SMOV, SCMP, RND
-#     - agregar funciones de uso de la pila
+# colores para terminal
+class Colors:
+    RED = '\033[91m'
+    YELLOW = '\033[93m'
+    UNDERLINE = '\033[4m'
+    NOUNDERLINE = '\033[24m'
+    RESETCOLOR = '\033[39m'
 
 # mnem : [codigo, nro operandos]
 hashmap = {
@@ -114,7 +105,7 @@ tipos_errores = [
     "Cantidad de operandos erronea.",
     "Simbolo duplicado.",
     "No se encuentra simbolo.",
-    "Valor inapropiado en directiva"
+    "Valor inapropiado en directiva."
 ]
 
 errores = {
@@ -431,9 +422,9 @@ def generaValorCodificado(codMnemonico, cantidadOperandos, tipoOperandos, operan
 
 def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, tipoOperando2, numLinea):
     if operando1 & 0xFFF != operando1:
-        print("Warning... truncado de operando en linea " + str(numLinea + 1) + ".")
+        print(Colors.YELLOW + Colors.UNDERLINE + "Warning:" + Colors.NOUNDERLINE + " truncado de operando en linea " + str(numLinea) + "." + Colors.RESETCOLOR)
     if operando2 & 0xFFF != operando2:
-        print("Warning... truncado de operando en linea " + str(numLinea + 1) + ".")
+        print(Colors.YELLOW + Colors.UNDERLINE + "Warning:" + Colors.NOUNDERLINE + " truncado de operando en linea " + str(numLinea) + "." + Colors.RESETCOLOR)
     codigo = np.left_shift(codigoOperacion & 0x00F, 28, dtype=np.int64)
     tipoA = np.left_shift(tipoOperando1, 26, dtype=np.int64)
     a = np.left_shift(operando1 & 0xFFF, 12, dtype=np.int64)
@@ -446,7 +437,7 @@ def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, t
 # TODO completo ceros si es de tipo indirecto (tipo == 3)
 def operacion1Parametro(codigoOperacion, operando1, tipoOperando1, numLinea):
     if operando1 & 0xFFFF != operando1:
-        print("Warning... truncado de operando en linea " + str(numLinea + 1) + ".")
+        print(Colors.YELLOW + Colors.UNDERLINE + "Warning:" + Colors.NOUNDERLINE + " truncado de operando en linea " + str(numLinea) + "." + Colors.RESETCOLOR)
     unos = 15 << 28
     codigo = (codigoOperacion & 0x00F) << 24
     tipoA = tipoOperando1 << 22
