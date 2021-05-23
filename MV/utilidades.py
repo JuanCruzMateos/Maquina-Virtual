@@ -422,9 +422,9 @@ def generaValorCodificado(codMnemonico, cantidadOperandos, tipoOperandos, operan
 
 def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, tipoOperando2, numLinea):
     if operando1 & 0xFFF != operando1:
-        print(Colors.YELLOW + Colors.UNDERLINE + "Warning:" + Colors.NOUNDERLINE + " truncado de operando en linea " + str(numLinea) + "." + Colors.RESETCOLOR)
+        print(Colors.YELLOW + Colors.UNDERLINE + "Warning" + Colors.NOUNDERLINE + ": truncado de operando en linea " + str(numLinea) + "." + Colors.RESETCOLOR)
     if operando2 & 0xFFF != operando2:
-        print(Colors.YELLOW + Colors.UNDERLINE + "Warning:" + Colors.NOUNDERLINE + " truncado de operando en linea " + str(numLinea) + "." + Colors.RESETCOLOR)
+        print(Colors.YELLOW + Colors.UNDERLINE + "Warning" + Colors.NOUNDERLINE + ": truncado de operando en linea " + str(numLinea) + "." + Colors.RESETCOLOR)
     codigo = np.left_shift(codigoOperacion & 0x00F, 28, dtype=np.int64)
     tipoA = np.left_shift(tipoOperando1, 26, dtype=np.int64)
     a = np.left_shift(operando1 & 0xFFF, 12, dtype=np.int64)

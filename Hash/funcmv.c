@@ -1,9 +1,9 @@
 #include "funcmv.h"
 
-char *tags[][12] = {{"STOP",    "",    "",     "",    "",    "",    "",    "",    "",    "",   "",    ""},
-                    {"SYS" , "JMP",  "JZ",   "JP",  "JN", "JNZ", "JNP", "JNN", "LDL", "LDH","RND", "NOT"},
-                    {"MOV" , "ADD", "SUB", "SWAP", "MUL", "DIV", "CMP", "SHL", "SHR", "AND", "OR", "XOR"},
-                    {"AC"  , "AX"  ,  "BX",  "CX",   "DX",  "EX",  "FX",  "",    "",    "",    "",   "" }};
+char *tags[][15] = {{"RET" ,"STOP",    "",    "",     "",    "",    "",    "",    "",    "",   "",    "",     "",    "" ,      ""},
+                    {"SYS" , "JMP",  "JZ",   "JP",  "JN", "JNZ", "JNP", "JNN", "LDL", "LDH","RND", "NOT", "PUSH",  "POP",  "CALL"},
+                    {"MOV" , "ADD", "SUB", "SWAP", "MUL", "DIV", "CMP", "SHL", "SHR", "AND", "OR", "XOR", "SLEN", "SMOV",  "SCMP"},
+                    {"AC"  , "AX"  ,  "BX",  "CX",   "DX",  "EX",  "FX",   "",    "",    "",   "",   "" ,     "",     "",      ""}};
 
 void load_ram(FILE *arch, memoria_t *memoria) {
     int i = 0, x;

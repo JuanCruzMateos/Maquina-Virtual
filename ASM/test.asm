@@ -1,6 +1,6 @@
     \\ASM data=10 EXTRA=70000 STACK=5000
 UNO  EQU   %1
-tres EQU %3
+uno EQU %3
 cero  equ 0
     mov    [1], #-10
     mov    [2], cero
