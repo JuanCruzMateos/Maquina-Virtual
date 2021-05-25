@@ -1,81 +1,181 @@
-#include "func_mv.h"
+#include "hashtable.h"
+#include "funcmv.h"
 
-// registro[0] = DS
-// registro[5] = IP
+/* ********************************************************************************************************************
+ *                                       EJECUTOR MAQUINA VIRTUAL - GRUPO I                                           *
+ * ********************************************************************************************************************/
 
-int main(int argc, char const *argv[]) {
+void cargar_funciones(hash_table_t *ht);
+
+
+int main(int argc, char *argv[]) {
     FILE *binfile;
+    memoria_t memoria;
+    funct_ptr func;
     operacion op;
-    int i;
+    hash_table_t *ht;
+    int mem_absA, mem_absB;
+    int check_header, check_flags;
+    int seg_fault = 0;
 
-    flags.b = flags.c = flags.d = 0;
-    if (argc > 2) {
-        for (i = 2; i < argc; i++) {
-            if (strcmp(argv[i], "-b") == 0)
-                flags.b = 1;
-            else if (strcmp(argv[i], "-c") == 0)
-                flags.c = 1;
-            else if (strcmp(argv[i], "-d") == 0)
-                flags.d = 1;
-        }
+    if (argc == 1) {
+        printf(RED); printf("Falta archivo.bin"); printf(RESET);
+        return -1;
     }
     binfile = fopen(argv[1], "rb");
-    if (binfile == NULL)
+    if (binfile == NULL) {
+        printf(RED); printf("Archivo inexistente."); printf(RESET);
         return -1;
-    load_ram(binfile, ram, &registro[0]);
+    }
+    check_header = read_header(binfile, &memoria);
+    if (check_header == 1) {
+        printf(RED); printf("Formato de archivo x.bin incorrecto."); printf(RESET);
+        return -1;
+    } else if (check_header == 2) {
+        printf(RED); printf("Memoria insuficiente."); printf(RESET);
+        return -1;
+    }
+    init_reg(memoria.registro);
+    load_cs(binfile, &memoria);
     fclose(binfile);
-    // printf("RAM: \n");
-    // print_binary(ram, registro[0]);
-    if (flags.c)
+    check_flags = get_flags(argv, argc, &memoria);
+    if (check_flags != 0) {
+        printf(YELLOW); printf("Flag invalido. Unicamente permitidos: [-c] [-d] [-b]\n"); printf(RESET);
+    }
+    // print_binary(memoria);
+    ht = hash_new();
+    cargar_funciones(ht);
+    if (memoria.flags.c)
         system("cls");
-    if (flags.d)
-        disassembler();
-    registro[5] = 0;
-    while (0 <= registro[5] && registro[5] < registro[0]) {
-        op = decodificar_operacion(ram[registro[5]]);
-        // printf("instruccion: %02X %02X %02X %02X\n", (ram[registro[5]] >> 24) & 0xFF, (ram[registro[5]] >> 16) & 0xFF, (ram[registro[5]] >> 8) & 0xFF, ram[registro[5]] & 0xFF);
-        // printf("cod = %03X \ntipoA = %02X \ntipoB = %02X \nvalorA = %02X \nvalorB = %02X\n\n", op.codigo_op, op.tipo_a, op.tipo_b, op.valor_a, op.valor_b);
-        registro[5] += 1;
+    if (memoria.flags.d)
+        disassembler(memoria.ram, memoria.registro);
+    memoria.segfault = 0;
+    memoria.registro[5] = 0;
+    while ((0 <= memoria.registro[5] && memoria.registro[5] < (memoria.registro[0] & 0xFFFF)) && !memoria.segfault) {
+        op = decodificar_operacion(memoria.ram[memoria.registro[5]]);
+        memoria.registro[5] += 1;
+        func = (funct_ptr) hash_get(ht, op.codigo_op);
+        // if (func == NULL)
+        //     printf("problema en hash\n");
         switch (op.estado) {
             case CERO_OP:
-                STOP(); break;
-            case DOS_OP_REG_IN:
-                (*instruccion_dos_op[op.codigo_op])(&registro[op.valor_a], &(op.valor_b));
+                func(NULL, NULL, &memoria);
+                break;
+            case DOS_OP_REG_INM:
+                func(&(memoria.registro[op.valor_a]), &(op.valor_b), &memoria);
                 break;
             case DOS_OP_REG_REG:
-                (*instruccion_dos_op[op.codigo_op])(&registro[op.valor_a], &registro[op.valor_b]);
+                func(&(memoria.registro[op.valor_a]), &(memoria.registro[op.valor_b]), &memoria);
                 break;
             case DOS_OP_REG_DIR:
-                (*instruccion_dos_op[op.codigo_op])(&registro[op.valor_a], &ram[op.valor_b + registro[0]]);
+                func(&(memoria.registro[op.valor_a]), &(memoria.ram[op.valor_b + (memoria.registro[0] & 0xFFFF)]), &memoria);
                 break;
-            case DOS_OP_DIR_IN:
-                (*instruccion_dos_op[op.codigo_op])(&ram[op.valor_a + registro[0]], &(op.valor_b));
+            case DOS_OP_REG_IND:
+                mem_absB = dir_mem_abs_indirecto(op.valor_b, memoria.registro, &(memoria.segfault));
+                func(&(memoria.registro[op.valor_a]), &(memoria.ram[mem_absB]), &memoria);
+                break;
+            case DOS_OP_DIR_INM:
+                func(&(memoria.ram[op.valor_a + (memoria.registro[0] & 0xFFFF)]), &(op.valor_b), &memoria);
                 break;
             case DOS_OP_DIR_REG:
-                (*instruccion_dos_op[op.codigo_op])(&ram[op.valor_a + registro[0]], &registro[op.valor_b]);
+                func(&(memoria.ram[op.valor_a + (memoria.registro[0] & 0xFFFF)]), &(memoria.registro[op.valor_b]), &memoria);
                 break;
             case DOS_OP_DIR_DIR:
-                (*instruccion_dos_op[op.codigo_op])(&ram[op.valor_a + registro[0]], &ram[op.valor_b + registro[0]]);
+                func(&(memoria.ram[op.valor_a + (memoria.registro[0] & 0xFFFF)]), &(memoria.ram[op.valor_b + (memoria.registro[0] & 0xFFFF)]), &memoria);
                 break;
-            case DOS_OP_IN_IN:
-                (*instruccion_dos_op[op.codigo_op])(&op.valor_a, &op.valor_b);
+            case DOS_OP_DIR_IND:
+                mem_absB = dir_mem_abs_indirecto(op.valor_b, memoria.registro,&(memoria.segfault));
+                func(&(memoria.ram[op.valor_a + (memoria.registro[0] & 0xFFFF)]), &(memoria.ram[mem_absB]), &memoria);
                 break;
-            case DOS_OP_IN_REG:
-                (*instruccion_dos_op[op.codigo_op])(&op.valor_a, &registro[op.valor_b]);
+            case DOS_OP_INM_INM:
+                func(&op.valor_a, &op.valor_b, &memoria);
                 break;
-            case DOS_OP_IN_DIR:
-                (*instruccion_dos_op[op.codigo_op])(&op.valor_a, &ram[op.valor_b + registro[0]]);
+            case DOS_OP_INM_REG:
+                func(&op.valor_a, &(memoria.registro[op.valor_b]), &memoria);
                 break;
-            case UN_OP_IN:
-                (*instruccion_un_op[op.codigo_op & 0xF])(&op.valor_a);
+            case DOS_OP_INM_DIR:
+                func(&op.valor_a, &(memoria.ram[op.valor_b + (memoria.registro[0] & 0xFFFF)]), &memoria);
+                break;
+            case DOS_OP_INM_IND:
+                mem_absB = dir_mem_abs_indirecto(op.valor_b, memoria.registro, &(memoria.segfault));
+                func(&op.valor_a, &(memoria.ram[mem_absB]), &memoria);
+                break;
+            case DOS_OP_IND_INM:
+                mem_absA = dir_mem_abs_indirecto(op.valor_a, memoria.registro, &(memoria.segfault));
+                func(&(memoria.ram[mem_absA]), &op.valor_b, &memoria);
+                break;
+            case DOS_OP_IND_REG:
+                mem_absA = dir_mem_abs_indirecto(op.valor_a, memoria.registro, &(memoria.segfault));
+                func(&(memoria.ram[mem_absA]), &(memoria.registro[op.valor_b]), &memoria);
+                break;
+            case DOS_OP_IND_DIR:
+                mem_absA = dir_mem_abs_indirecto(op.valor_a, memoria.registro, &(memoria.segfault));
+                func(&(memoria.ram[mem_absA]), &(memoria.ram[op.valor_b + (memoria.registro[0] & 0xFFFF)]), &memoria);
+                break;
+            case DOS_OP_IND_IND:
+                mem_absA = dir_mem_abs_indirecto(op.valor_a, memoria.registro, &(memoria.segfault));
+                mem_absB = dir_mem_abs_indirecto(op.valor_b, memoria.registro, &(memoria.segfault));
+                func(&(memoria.ram[mem_absA]), &(memoria.ram[mem_absB]), &memoria);
+                break;
+            case UN_OP_INM:
+                func(&op.valor_a, NULL, &memoria);
                 break;
             case UN_OP_REG:
-                (*instruccion_un_op[op.codigo_op & 0xF])(&registro[op.valor_a]);
+                func(&(memoria.registro[op.valor_a]), NULL, &memoria);
                 break;
             case UN_OP_DIR:
-                (*instruccion_un_op[op.codigo_op & 0xF])(&ram[op.valor_a + registro[0]]);
+                func(&(memoria.ram[op.valor_a + (memoria.registro[0] & 0xFFFF)]), NULL, &memoria);
+                break;
+            case UN_OP_IND:
+                mem_absA = dir_mem_abs_indirecto(op.valor_a, memoria.registro, &(memoria.segfault));
+                func(&(memoria.ram[mem_absA]), NULL, &memoria);
                 break;
         }
     }
+    // if (memoria.segfault) {
+        // printf(RED); printf("Segmentation Fault."); printf(RESET);
+    // }
+    hash_delete(ht);
     return 0;
+}
+
+
+void cargar_funciones(hash_table_t *ht) {
+    // dos operandos
+    hash_put(ht,  0, MOV);  
+    hash_put(ht,  1, ADD);
+    hash_put(ht,  2, SUB);
+    hash_put(ht,  3, SWAP);
+    hash_put(ht,  4, MUL);
+    hash_put(ht,  5, DIV);
+    hash_put(ht,  6, CMP);
+    hash_put(ht,  7, SHL);
+    hash_put(ht,  8, SHR);
+    hash_put(ht,  9, AND);
+    hash_put(ht, 10, OR);
+    hash_put(ht, 11, XOR);
+    hash_put(ht, 12, SLEN);
+    hash_put(ht, 13, SMOV);
+    hash_put(ht, 14, SCMP);
+
+    // un operando
+    hash_put(ht, 0xF0, SYS);
+    hash_put(ht, 0xF1, JMP);
+    hash_put(ht, 0xF2, JZ);
+    hash_put(ht, 0xF3, JP);
+    hash_put(ht, 0xF4, JN);
+    hash_put(ht, 0xF5, JNZ);
+    hash_put(ht, 0xF6, JNP);
+    hash_put(ht, 0xF7, JNN);
+    hash_put(ht, 0xF8, LDL);
+    hash_put(ht, 0xF9, LDH);
+    hash_put(ht, 0xFA, RND);
+    hash_put(ht, 0xFB, NOT);
+    hash_put(ht, 0xFC, PUSH);
+    hash_put(ht, 0xFD, POP);
+    hash_put(ht, 0xFE, CALL);
+
+    // cero operandos
+    hash_put(ht, 0xFF0, RET);
+    hash_put(ht, 0xFF1, STOP);
 }

@@ -1,7 +1,9 @@
-    \\ASM data=10 EXTRA=70000 STACK=5000
+    \\ASM data=10 STACK=30
 UNO  EQU   %1
-uno EQU %3
+juan EQU "JUAN"
+tres EQU %3
 cero  equ 0
+    sys    %f
     mov    [1], #-10
     mov    [2], cero
     add    [1], [2]
@@ -21,10 +23,4 @@ cinco       equ 5
     mov     dx, cinco
     sys     dos
     jp      [ex+15]
-    smov    [1], tres
-    push    ax
-
-    pop     [1]
-    call    HOLA
-    ret
     stop

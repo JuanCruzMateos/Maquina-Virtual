@@ -105,7 +105,8 @@ tipos_errores = [
     "Cantidad de operandos erronea.",
     "Simbolo duplicado.",
     "No se encuentra simbolo.",
-    "Valor inapropiado en directiva."
+    "Valor inapropiado en directiva.",
+    "Simbolo invalido."
 ]
 
 errores = {
@@ -208,19 +209,17 @@ def guardarConstante(linea: list):
         saltos[const] = int(valor)
     else:
         baseOp = valor[0]
-        if baseOp == "'":
-            valorOp = valor.replace("'","")
-            if len(valorOp) < 2:
-                if len(valorOp) == 0:
-                    valorOp = ' '
-                valorOp = ord(valorOp)
-                saltos[const] = valorOp
-            else:
+        if baseOp == '"' or baseOp[0] == "'":
+            valorOp = valor.replace('"','').replace("'","")
+            if len(valorOp) < 3:
+                errores[-3] = 6 # simbolo invalido
+            else:    
                 strings[const] = [valorOp, -1]
-        else:
+        elif baseOp in base and baseOp != "'":
             valorOp = int(valor[1:], base[baseOp])
             saltos[const] = valorOp
-
+        else: 
+            errores[-3] = 6
 
 # TODO nuevo: determina pos de strings en DS y actualiza headers
 def valorConstStrings(programaEnListas):

@@ -6,16 +6,16 @@ def main(argv):
     salidaPorPantalla = True
 
     if len(argv) < 3 or (len(argv) == 3 and argv[-1] == "-o"):
-        print("ERROR:" + " falta especificar nombre de archivo .bin")
+        print(fn.Colors.RED + "ERROR:" + fn.Colors.RESETCOLOR + " falta especificar nombre de archivo .bin")
         return None
     elif len(argv) == 4:
         if argv[-1] == "-o":
             salidaPorPantalla = False
         else:
-            print("ERROR:" + " flag invalido. Solo [-o] es admitido.")
+            print(fn.Colors.RED + "ERROR:" + fn.Colors.RESETCOLOR + " flag invalido. Solo [-o] es admitido.")
             return None
     elif len(argv) > 4:
-        print("ERROR:" + " numero de parametros invalido.")
+        print(fn.Colors.RED + "ERROR:" + fn.Colors.RESETCOLOR + " numero de parametros invalido.")
         return None
 
     # supongo que se respeta formato
@@ -51,9 +51,9 @@ def main(argv):
 
     if not fn.errores:
         # TODO agregar headers in numpyCod
-        # fn.agregarInfoHeaders(codigo)
+        fn.agregarInfoHeaders(codigo)
         # TODO agregar strings (van en DS)
-        # fn.agregarStringsDS(codigo)
+        fn.agregarStringsDS(codigo)
         numpyCod = np.array(codigo)
         numpyCod = numpyCod.astype(np.int32)
         filename = pathParaGuardar

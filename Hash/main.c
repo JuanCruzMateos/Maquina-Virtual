@@ -18,7 +18,6 @@ int main(int argc, char *argv[]) {
     if (binfile == NULL)
         return -1;
     inicializar_registros(memoria.registro);
-    // TODO verificar header -> int 
     load_ram(binfile, &memoria);
     fclose(binfile);
     get_flags(argv, argc, &memoria);
