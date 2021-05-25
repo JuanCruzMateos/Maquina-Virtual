@@ -559,23 +559,79 @@ void compactar(int *ram, int *registro) {
 void es_free(int *ram, int *registro) {
     int inicio_ES = registro[2] & 0xFFFF;
     int pos_liberar;
-    int act_ocup, ant_ocup;
+    int act_ocup, ant_ocup, act_lib, ant_lib;
+    int un_solo_bloque_ocupado;
+    int proximo_ocupado;
 
     // if (reg[13] >> 16 != 2) -> que pasa si no es del ES?
     pos_liberar = registro[13] & 0xFFFF;
+    act_lib  = registro[4] >> 16;
     act_ocup = registro[4] & 0xFFFF;
-    
+
+    // si hay memoria por liberar
     if (act_ocup != 0xFFFF) {
+
         do {
             ant_ocup = act_ocup;
             act_ocup = ram[inicio_ES + act_ocup] & 0xFFFF;
-        } while (act_ocup != (registro[4] & 0xFFFF) && pos_liberar != act_ocup);
+        } while (act_ocup != (registro[4] & 0xFFFF) && !(act_ocup <= pos_liberar && pos_liberar <= (act_ocup + (ram[inicio_ES + act_ocup] >> 16))));
 
         // si encontre la posicion
-        if (pos_liberar == act_ocup) {
+        if (act_ocup <= pos_liberar && pos_liberar <= (act_ocup + (ram[inicio_ES + act_ocup] >> 16))) {
             
+            // si HPH == -1 :: no hay nada libre 
+            if (act_lib == 0xFFFF) {
+                    // si act_ocup->sig = act_ocup => todo el bloque esta ocupado
+                if ((ram[inicio_ES + act_ocup] & 0xFFFF) == act_ocup) {
+                    registro[4] = 0x0000FFFF;
+                } else {
+                    // hay varios bloques ocupados -> solo libero ese
+                    // ant_ocup->sig = act_ocup->sig;
+                    ram[inicio_ES + ant_ocup] = (ram[inicio_ES + ant_ocup] & 0xFFFF0000) | (ram[inicio_ES + act_ocup] & 0xFFFF);
+
+                    // actualizo HPH Y HPL
+                    // HPH es el nuevo nodo que estoy liberando
+                    // if HPL == act_ocup: HPL = act_ocup->sig;
+                    if ((registro[4] & 0xFFFF) == act_ocup)
+                        registro[4] = (act_ocup << 16) | (ram[inicio_ES + act_ocup] & 0xFFFF);
+                    else
+                        registro[4] = (act_ocup << 16) | (registro[4] & 0xFFFF);
+
+                    // actualizo header del nuevo nodo que estoy liberando
+                    ram[inicio_ES + act_ocup] = (ram[inicio_ES + act_ocup] & 0xFFFF0000) | act_ocup;
+                }
+            } else {
+                // hay bloques libres
+                un_solo_bloque_ocupado = (ram[inicio_ES + act_ocup] & 0xFFFF == act_ocup);
+                // guardo el proximo ocupado del bloque a liberar
+                proximo_ocupado = ram[inicio_ES + act_ocup] & 0xFFFF;
+                // recorro lista de libres buscando al anterior
+                do {
+                    ant_lib = act_lib;
+                    act_lib = ram[inicio_ES + act_lib] & 0xFFFF;
+                } while ((act_lib != (registro[4] >> 16)) && (act_lib > act_ocup || ((ram[inicio_ES + act_lib] & 0xFFFF) < act_ocup)));
+
+                // act_ocup->sig = act_lib->sig;
+                ram[inicio_ES + act_ocup] = (ram[inicio_ES + act_ocup] & 0xFFFF000) | (ram[inicio_ES + act_lib] & 0xFFFF);
+                // act_lib->sig = act_ocup;
+                ram[inicio_ES + act_lib]  = (ram[inicio_ES + act_lib] & 0xFFFF0000) | (act_ocup);
+                
+                // ant_ocup->sig = act_coup->sig;
+                if (act_ocup != ant_ocup) {
+                    ram[inicio_ES + ant_ocup] = (ram[inicio_ES + ant_ocup] & 0xFFFF0000) | (proximo_ocupado);
+                }
+                
+                // si el HPL apunta al que libero -> lo paso al siguiente
+                if ((registro[4] & 0xFFFF) == act_ocup) {
+                    if (un_solo_bloque_ocupado)
+                        registro[4] = (registro[4] & 0xFFFF0000) | 0xFFFF;
+                    else
+                        registro[4] = (registro[4] & 0xFFFF0000) | ant_ocup;
+                }        
+                // al finalizar compacto el ES
+                compactar(ram, registro);
+            }
         }
-        compactar(ram, registro);
     }
 }
 
