@@ -18,4 +18,7 @@
     mov dx, 11
     sys  %6
     sys  %f
+        mov dx, 5
+    sys  %6
+    sys  %f
     stop

@@ -20,6 +20,8 @@ typedef struct {
     int registro[CANT_REG];
     flags_t flags;
     int segfault;
+    int stack_overflow;
+    int stack_underflow;
 } memoria_t;
 
 typedef enum { DOS_OP_REG_INM, DOS_OP_REG_REG, DOS_OP_REG_DIR, DOS_OP_REG_IND,

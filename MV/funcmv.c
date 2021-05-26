@@ -15,16 +15,16 @@ int read_header(FILE *arch, memoria_t *memoria) {
         return 1;
     else {
         fread(&ds, sizeof(int), 1, arch);
-        fread(&es, sizeof(int), 1, arch);
         fread(&ss, sizeof(int), 1, arch);
+        fread(&es, sizeof(int), 1, arch);
         fread(&cs, sizeof(int), 1, arch);
         if (ds+es+ss+cs > CANT_RAM) {
             return 2;
         } else {
             memoria->registro[3] = (cs << 16);
             memoria->registro[0] = (ds << 16) | (cs & 0xFFFF);
-            memoria->registro[1] = (es << 16) | ((cs + ds) & 0xFFFF);
-            memoria->registro[2] = (ss << 16) | ((cs + ds + es) & 0xFFFF);
+            memoria->registro[2] = (es << 16) | ((cs + ds ) & 0xFFFF);
+            memoria->registro[1] = (ss << 16) | ((cs + ds + es) & 0xFFFF);
             return 0;
         }
     }
@@ -35,6 +35,8 @@ void init_reg(int *reg) {
     reg[4] = -1;
     for (int i = 5; i < CANT_REG; i++)
         reg[i] = 0;
+    reg[6] = 0x00010000 | reg[1] >> 16;
+    reg[7] = 0x00010000 | reg[1] >> 16;
 }
 
 void load_cs(FILE *arch, memoria_t *memoria) {
@@ -44,6 +46,9 @@ void load_cs(FILE *arch, memoria_t *memoria) {
     while (fread(&x, sizeof(int), 1, arch) == 1) {
         (*memoria).ram[i++] = x;
     }
+    memoria->segfault = 0;
+    memoria->stack_overflow = 0;
+    memoria->stack_underflow = 0;
 }
 
 int get_flags(char *argv[], int argc, memoria_t *memoria) {
@@ -176,6 +181,13 @@ estados setEstado(int cant_op, int tipo_a, int tipo_b) {
                     case 2: estado = DOS_OP_DIR_DIR; break;
                     case 3: estado = DOS_OP_DIR_IND; break;
                 }
+            } else if (tipo_a == 3) {
+                switch (tipo_b) {
+                    case 0: estado = DOS_OP_IND_INM; break;
+                    case 1: estado = DOS_OP_IND_REG; break;
+                    case 2: estado = DOS_OP_IND_DIR; break;
+                    case 3: estado = DOS_OP_IND_IND; break;
+                }
             }
             break;
     }
@@ -196,8 +208,8 @@ operacion decodificar_operacion(int instruccion_hex) {
 }
 
 void modificar_CC(int resultado, int *reg) {
-    int N = resultado & 0x80000000;
-    int Z = resultado == 0;
+    int N = (resultado & 0x80000000);
+    int Z = (resultado == 0);
     reg[8] = N | Z;
 }
 
@@ -234,7 +246,9 @@ void DIV(int *a, int *b, memoria_t *mem) {
 }
 
 void CMP(int *a, int *b, memoria_t *mem) {
-    modificar_CC(*a - *b, mem->registro);
+    // printf("a = %d, b = %d\n", *a, *b);
+    int res = (*a - *b);
+    modificar_CC(res, mem->registro);
 }
 
 void SHL(int *a, int *b, memoria_t *mem) {
@@ -269,6 +283,7 @@ void sys_read(int *ram, int *registro) {
     char buffer[256];
     int i, j;
 
+    fflush(stdin);
     if (scan_char) {
         if (has_prompt)
             printf("[%04d]: ", registro[13]);
@@ -341,6 +356,7 @@ void disassembler(int *ram, int *registro) {
     char *mnem, op_1[15], op_2[15];
     operacion op;
     int i;
+    int aux;
 
     if (fin - inicio < 10) {
         if (fin == (registro[0] & 0xFFFF) && inicio != 0)
@@ -366,12 +382,14 @@ void disassembler(int *ram, int *registro) {
             case  0: sprintf(op_1, "%d", op.valor_a); break;
             case  1: sprintf(op_1, "%s", tags[3][op.valor_a]); break;
             case  2: sprintf(op_1, "[%d]", op.valor_a); break;
+            case  3: sprintf(op_1, "%d", ram[dir_mem_abs_indirecto(op.valor_a, registro, &aux)]);
         }
         // operando b
         switch (op.tipo_b) {
             case  0: sprintf(op_2, "%d", op.valor_b); break;
             case  1: sprintf(op_2, "%s", tags[3][op.valor_b]); break;
             case  2: sprintf(op_2, "[%d]", op.valor_b); break;
+            case  3: sprintf(op_2, "%d", ram[dir_mem_abs_indirecto(op.valor_b, registro, &aux)]);
         }
         printf("%s %s    %2d: %5s %5s %s", mem, hex, i+1, mnem, " ", op_1);
         (op.tipo_b == -1) ? printf("\n") : printf(", %s\n", op_2);
@@ -385,6 +403,7 @@ void sys_breakpoint(int *ram, int *registro, flags_t flags) {
     char *nums;
     int i, n1, n2;
 
+    fflush(stdin);
     if (!saltear_bp) {     
         // if (flags.c)
         //     system("cls");
@@ -439,7 +458,6 @@ void str_write(int *ram, int *registro) {
     int cod_seg    = registro[13] >> 16;
     int base       = registro[cod_seg] & 0xFFFF;
     int offset     = registro[13] & 0xFFFF;
-    int tope_mem   = (registro[cod_seg] & 0xFFFF) + (registro[cod_seg] >> 16);
 
     if (has_prompt)
         printf("[%04d]: ", base + offset);
@@ -458,6 +476,13 @@ void init_heap(int *ram, int *registro) {
     registro[4] = 0x0000FFFF;
 }
 
+void printfmemoria(int *ram, int *registro){
+    printf("\n\nMuestro memoria:\n");
+    for (int i=registro[2] & 0xFFFF; i<((registro[2] & 0xFFFF)+20);i++){
+        printf("[%04d]: %08X = %04X %04X = %04d %04d\n", i-(registro[2] & 0xFFFF),ram[i],ram[i]>> 16,ram[i] & 0xFFFF,ram[i]>> 16,ram[i] & 0xFFFF);
+    }
+    printf("Fin muestreo\n\n");
+}
 
 void es_new(int *ram, int *registro) {
     int inicio_ES   = registro[2] & 0xFFFF;
@@ -550,11 +575,29 @@ void es_new(int *ram, int *registro) {
             registro[13] = -1;   // DX = -1;
         }
     }
+    printfmemoria(ram, registro);
 }
 
 void compactar(int *ram, int *registro) {
+    int inicio_ES = registro[2] & 0xFFFF;
+    int ant = registro[4] >> 16;
+    int act = ram[inicio_ES+ant] & 0xFFFF;
+    int tam_nuevo;
 
+    if (ant != 0xFFFF) {
+        while (act != (registro[4] >> 16)) {
+            if (ant + (ram[inicio_ES + ant] >> 16) + 1 == act) {
+                tam_nuevo = 1 + (ram[inicio_ES + ant] >> 16) + (ram[inicio_ES + act] >> 16);
+                ram[inicio_ES + ant] = (tam_nuevo << 16) | (ram[inicio_ES + act] & 0xFFFF);
+            } else {
+                ant = act;
+            }
+            act = ram[inicio_ES + act] & 0xFFFF;
+        }
+    }
+    printfmemoria(ram, registro);
 }
+
 
 void es_free(int *ram, int *registro) {
     int inicio_ES = registro[2] & 0xFFFF;
@@ -602,7 +645,7 @@ void es_free(int *ram, int *registro) {
                 }
             } else {
                 // hay bloques libres
-                un_solo_bloque_ocupado = (ram[inicio_ES + act_ocup] & 0xFFFF == act_ocup);
+                un_solo_bloque_ocupado = ((ram[inicio_ES + act_ocup] & 0xFFFF) == act_ocup);
                 // guardo el proximo ocupado del bloque a liberar
                 proximo_ocupado = ram[inicio_ES + act_ocup] & 0xFFFF;
                 // recorro lista de libres buscando al anterior
@@ -736,16 +779,16 @@ void STOP(int *a, int *b, memoria_t *mem) {
 void PUSH(int *a, int *b, memoria_t *mem) {
     // luego borrar estos comentarios
     // si SPL es cero --> pila llena (verifico antes de restar el registro)
+    // printf("PUSH -> sp = %d, bp = %d\n", mem->registro[6] &  0xFFFF, mem->registro[7] & 0xFFFF);
     if ((mem->registro[6] & 0x0000FFFF) == 0) {
-        printf(RED); printf("Stack-overflow"); printf(RESET);
         // TODO -> terminar proceso --> como lo hacemos? es void
-        mem->segfault = 1;
+        mem->stack_overflow = 1;
     } else {
         // SP = SP - 1
         mem->registro[6] -= 1;
         // Guardo el dato que viene en *a en la posicion de memoria relativa al SS
         // verdadera direccion = SSL + SPL
-        mem->ram[mem->registro[1] & 0x0000FFFF + mem->registro[6] & 0x0000FFFF] = *a;
+        mem->ram[(mem->registro[1] & 0x0000FFFF) + (mem->registro[6] & 0x0000FFFF)] = *a;
         // no cambia el registro cc no?
     }
 }
@@ -753,13 +796,15 @@ void PUSH(int *a, int *b, memoria_t *mem) {
 void POP(int *a, int *b, memoria_t *mem) {
     // luego borrar estos comentarios
     // Si SPL + SSL >= SSH --> pila vacia --> stack-underflow
-    if (((mem->registro[6] & 0x0000FFFF) + (mem->registro[1] & 0x0000FFFF)) >= ((mem->registro[1] & 0xFFFF0000)>>16)) {
-        printf(RED); printf("Stack-underflow"); printf(RESET);
+    // printf("POP -> sp = %d, bp = %d\n", mem->registro[6] & 0xFFFF, mem->registro[7] & 0xFFFF);
+    if ((mem->registro[6] & 0x0000FFFF) /*+ (mem->registro[1] & 0x0000FFFF))*/ >= ((mem->registro[1] & 0xFFFF0000)>>16)) {
         // TODO --> terminar proceso --> como lo hacemos? es void
-        mem->segfault = 1;
+        // printf("%d\n", mem->registro[6] & 0x0000FFFF);
+        // printf("%d\n", mem->registro[6] & 0x0000FFFF);
+        mem->stack_underflow = 1;
     } else {
         // guardamos en *a el dato guardado en la direccion de memoria SSL + SPL
-        *a = mem->ram[mem->registro[1] & 0x0000FFFF + mem->registro[6] & 0x0000FFFF];
+        *a = mem->ram[(mem->registro[1] & 0x0000FFFF) + (mem->registro[6] & 0x0000FFFF)];
         // SP = SP + 1
         mem->registro[6] += 1;
     }
@@ -776,10 +821,10 @@ void CALL(int *a, int *b, memoria_t *mem) {
 // func(NULL, NULL, &mem)
 void RET(int *a, int *b, memoria_t *mem) {
     // obtengo valor del tope de la pila y lo guardo en paux
-    int *paux;
-    POP(paux, NULL, mem);
+    int paux;
+    POP(&paux, NULL, mem);
     // salto a esa direccion
-    JMP(paux, NULL, mem);
+    JMP(&paux, NULL, mem);
 }
 
 /* --------------------------------------------------------- */
