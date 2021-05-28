@@ -1,4 +1,4 @@
-        \\ASM data=5 extra=10
+        \\ASM data=9 extra=10
         MOV     AX,     %1
         MOV     DX,     10
         MOV     CX,     1
@@ -21,7 +21,7 @@ FACT:   PUSH    BP      ;guarda BP
         sys %f
         JP      SIGO
         MOV     AX,     1 ;retorna 1
-        
+
         JMP     FIN
 SIGO:   MOV     BX,     [   BP      +       2   ]
         SUB     BX,     1 ;calcula n-1
