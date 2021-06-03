@@ -23,7 +23,7 @@ int read_header(FILE *arch, memoria_t *memoria) {
         } else {
             memoria->registro[3] = (cs << 16);
             memoria->registro[0] = (ds << 16) | (cs & 0xFFFF);
-            memoria->registro[2] = (es << 16) | ((cs + ds ) & 0xFFFF);
+            memoria->registro[2] = (es << 16) | ((cs + ds) & 0xFFFF);
             memoria->registro[1] = (ss << 16) | ((cs + ds + es) & 0xFFFF);
             return 0;
         }
@@ -35,7 +35,9 @@ void init_reg(int *reg) {
     reg[4] = -1;
     for (int i = 5; i < CANT_REG; i++)
         reg[i] = 0;
+    // reg[6] == SP
     reg[6] = 0x00010000 | reg[1] >> 16;
+    // reg[7] == BP
     reg[7] = 0x00010000 | reg[1] >> 16;
 }
 
@@ -300,7 +302,7 @@ void sys_read(int *ram, int *registro) {
     } else {
         for (i = registro[13]; i < registro[13] + registro[12]; i++) {
             if (has_prompt)
-                printf("[%04d]:", i);
+                printf("[%04d]: ", i);
             switch (formato) {
                 case 1: scanf("%d", &ram[i + (registro[0] & 0xFFFF)]); break;
                 case 4: scanf("%o", &ram[i + (registro[0] & 0xFFFF)]); break;
@@ -321,9 +323,11 @@ void sys_write(int *ram, int *registro) {
     int formato    = registro[10] & 0x1F;
     int i;
 
-    if (has_prompt)
-        printf("[%04d]:", registro[13] & 0xFFFF);
+    // if (has_prompt)
+        // printf("[%04d]: ", registro[13] & 0xFFFF);
     for (i = (registro[13] & 0xFFFF); i < (registro[13] & 0xFFFF) + registro[12]; i++) {
+        if (has_prompt)
+            printf("[%04d]: ", i);
         switch (formato) {
             case  1: printf("%d", ram[i + (registro[0] & 0xFFFF)]); break;
             case  4: printf("@%08o", ram[i + (registro[0] & 0xFFFF)]); break;
@@ -344,7 +348,7 @@ void sys_write(int *ram, int *registro) {
 void print_registros(int *registro) {
     printf("\nRegistros:\n");
     printf("| DS = %7s%08X | SS = %7s%08X | ES = %7s%08X | CS = %7s%08X |\n", "", registro[0], "", registro[1], "", registro[2], "", registro[3]);
-    printf("| HP = %7s%08X | IP = %15d | SP = %15d | BP = %15d |\n", "", registro[4], registro[5], registro[6], registro[7]);
+    printf("| HP = %7s%08X | IP = %15d | SP = %7s%08X | BP = %7s%08X |\n", "", registro[4], registro[5], "", registro[6], "", registro[7]);
     printf("| CC = %15d | AC = %15d | AX = %15d | BX = %15d |\n", registro[8], registro[9], registro[10], registro[11]);
     printf("| CX = %15d | DX = %15d | EX = %15d | FX = %15d |\n\n", registro[12], registro[13], registro[14], registro[15]);
 }
@@ -685,9 +689,13 @@ int dir_mem_abs_indirecto(int valorOp, int *registro, int *segfault) {
     int base;
     int offset;
 
+    // printf("valor op = %08X\n", valorOp);
+    // OBS: el error esta en aplicar la mascara 0xFFF -> cuando es un -1 me lo toma como FF y, plt, como 255 
+    //      dando un seg Fault
+    // valorOp = (valorOp & 0xFFF);
     // printf("%08X\n", valorOp);
-    // 84 | 000084
-    valorOp = (valorOp & 0xFFF);
+    // printf("registro = %d, offset = %d\n\n", valorOp & 0xF, valorOp >> 4);
+
     // me quedo con la parte alta del registro -> segmento al cual quiero acceder
     code_seg = registro[valorOp & 0xF] >> 16;
     // printf("%d\n", code_seg);
@@ -699,7 +707,7 @@ int dir_mem_abs_indirecto(int valorOp, int *registro, int *segfault) {
     // printf("%d\n", offset);
 
     // printf("codeop = %d, offset = %d, base = %d\n", code_seg, offset, base);
-    if (offset > (registro[code_seg] >> 16))
+    if (offset >= (registro[code_seg] >> 16))
         *segfault = 1;
     return (base + offset);
 }
@@ -780,10 +788,9 @@ void STOP(int *a, int *b, memoria_t *mem) {
     mem->registro[5] = -1;
 }
 
-/* ------------------------------------- */
+/* ----------------------    Funciones de Pila   --------------------- */
 
 void PUSH(int *a, int *b, memoria_t *mem) {
-    // luego borrar estos comentarios
     // si SPL es cero --> pila llena (verifico antes de restar el registro)
     // printf("PUSH -> sp = %d, bp = %d\n", mem->registro[6] &  0xFFFF, mem->registro[7] & 0xFFFF);
     if ((mem->registro[6] & 0x0000FFFF) == 0) {
@@ -800,7 +807,6 @@ void PUSH(int *a, int *b, memoria_t *mem) {
 }
 
 void POP(int *a, int *b, memoria_t *mem) {
-    // luego borrar estos comentarios
     // Si SPL + SSL >= SSH --> pila vacia --> stack-underflow
     // printf("POP -> sp = %d, bp = %d\n", mem->registro[6] & 0xFFFF, mem->registro[7] & 0xFFFF);
     if ((mem->registro[6] & 0x0000FFFF) /*+ (mem->registro[1] & 0x0000FFFF))*/ >= ((mem->registro[1] & 0xFFFF0000)>>16)) {
@@ -833,47 +839,40 @@ void RET(int *a, int *b, memoria_t *mem) {
     JMP(&paux, NULL, mem);
 }
 
-/* --------------------------------------------------------- */
+/* ----------------------------   Funciones de Strings    ------------------------------ */
 
 void SLEN(int *a, int *b, memoria_t *mem) {
-    int *aux, longitud = 0;
+    int longitud = 0;
 
-    aux = b;
-    while (*aux != 0) {
-        aux++;
+    while (*b != 0) {
+        b++;
         longitud++;
     }
     *a = longitud;
 }
 
 
-// TODO -> revisar : no deberia mover solo el puntero ?
 void SMOV(int *a, int *b, memoria_t *mem) {
-    int *origen, *destino;
 
-    origen = b;
-    destino = a;
-    while (*origen != 0) {
-        *destino = *origen;
-        origen++;
-        destino++;
+    while (*b != 0) {
+        *a = *b;
+        b++;
+        a++;
     }
-    *destino = *origen;
+    *a = *b;
 }
 
 void SCMP(int *a, int *b, memoria_t *mem) {
-    int *origen, *destino, iguales = 0;
+    int iguales = 0;
 
-    origen = b;
-    destino = a;
-    while (iguales == 0 && !(*origen == 0 && *destino == 0)) {
-        if (*origen - *destino > 0) {
+    while (iguales == 0 && !(*b == 0 && *a == 0)) {
+        if (*b - *a > 0) {
             iguales = 1;
-        } else if (*origen - *destino<0) {
+        } else if (*b - *a < 0) {
             iguales = -1;
         }
-        origen++;
-        destino++;
+        b++;
+        a++;
     }
     modificar_CC(iguales,mem->registro);
 }

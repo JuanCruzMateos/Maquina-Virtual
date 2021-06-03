@@ -199,6 +199,7 @@ def guardarConstante(linea: list):
     correspondiente valor de mem dentro del CS cuando se termine de procesar el archivo por primera vez.
     -> valorConstStrings()
     """
+    # TODO -> quitar comentario de la linea de EQU <-
     const = linea[0].upper()
     valor = ' '.join(linea[2:])
     # si duplicado -> error: no generar imagen
@@ -344,6 +345,7 @@ def devuelveTipoOperandoYValorDecimal(operando: str, numLinea: int):
 
 
 # TODO nuevo: interpreta valor del operando indirecto
+# TODO MEJORAR
 def valorOperandoIndirecto(operando, numLinea):
     """
     Devuelve el valor del operando indirecto.

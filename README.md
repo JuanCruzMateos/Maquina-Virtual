@@ -7,23 +7,20 @@
 * Juan Cruz Mateos  
 
 ## Pasos a seguir para ejecutar el codigo.
-* Necesitan instalar 2 librerias de python (3.6 o superior)
-1) numpy
-2) re
+* Requerimientos:
+    - Necesitan instalar numpy 
+    - Python (3.6 o superior)
 
-* Para ejecutar el codigo poner lo siguiente:
+* Traductor:
 ```
-python Main.py Fibo.asm Fibo.bin [-o]
+python main.py fibo.asm fibo.bin [-o]
 ```
 
-Para ejecutar MVX:
-* Compilar: 
+* Maquina Virtual - Compilar: 
 ```
-gcc -o mvx.exe mvx.c func_mv.c
+gcc -o mvx.exe mvx.c funcmv.c hastable.c
 ```
-* Ejecutar: 
+* Maquina Virtual - Ejecutar: 
 ```
 mvx.exe fibo.bin [-b] [-c] [-d]
 ```
-
-

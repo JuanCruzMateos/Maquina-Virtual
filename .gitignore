@@ -1,8 +1,6 @@
 # ignore files and directories
 .vscode/
-MV-I-2021.pdf
 __pycache__/
-test.py
 UsefulCode/bin/
 *.bin
 *.exe
