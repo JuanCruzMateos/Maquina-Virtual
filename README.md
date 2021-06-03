@@ -13,7 +13,7 @@
 
 * Traductor:
 ```
-python main.py fibo.asm fibo.bin [-o]
+python mvc.py fibo.asm fibo.bin [-o]
 ```
 
 * Maquina Virtual - Compilar: 

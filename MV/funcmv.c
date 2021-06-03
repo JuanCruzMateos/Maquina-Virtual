@@ -36,7 +36,7 @@ void init_reg(int *reg) {
     for (int i = 5; i < CANT_REG; i++)
         reg[i] = 0;
     // reg[6] == SP
-    reg[6] = 0x00010000 | reg[1] >> 16;
+    reg[6] = 0x00010000 | reg[1] >> 16;   // se inicializa con el tamaño de la pila
     // reg[7] == BP
     reg[7] = 0x00010000 | reg[1] >> 16;
 }
@@ -289,7 +289,6 @@ void sys_read(int *ram, int *registro) {
     if (scan_char) {
         if (has_prompt)
             printf("[%04d]: ", registro[13]);
-        fflush(stdin);
         fgets(buffer, 256, stdin);
         i = 0;
         j = registro[13] + (registro[0] & 0xFFFF);
@@ -324,26 +323,33 @@ void sys_write(int *ram, int *registro) {
     int ini = (registro[registro[13] >> 16] & 0xFFFF) + (registro[13] & 0xFFFF);
     int i;
 
-    // if (has_prompt)
-        // printf("[%04d]: ", registro[13] & 0xFFFF);
-    // for (i = (registro[13] & 0xFFFF); i < (registro[13] & 0xFFFF) + registro[12]; i++) {
-    for (i = ini; i < ini + registro[12]; i++) {
+    if (formato == 16) {
         if (has_prompt)
             printf("[%04d]: ", i);
-        switch (formato) {
-            case  1: printf("%d", ram[i]); break;
-            case  4: printf("@%08o", ram[i]); break;
-            case  8: printf("%%%08X", ram[i]); break;
-            case 16: printf("%c", ram[i] & 0xFF); break;
-            default:
-                registro[10] & 0x10 ? printf("%c ", ram[i] & 0xFF) : printf(" ");
-                registro[10] & 0x08 ? printf("%%%08X ", ram[i]) : printf(" ");
-                registro[10] & 0x04 ? printf("@%08o ", ram[i]) : printf(" ");
-                registro[10] & 0x01 ? printf("%d ", ram[i]) : printf(" ");
-                break;
-        }
+        for (i = ini; i < ini + registro[12]; i++)
+            printf("%c", ram[i] & 0xFF);
         if (has_end)
             printf("\n");
+    } else {
+        // for (i = (registro[13] & 0xFFFF); i < (registro[13] & 0xFFFF) + registro[12]; i++) {
+        for (i = ini; i < ini + registro[12]; i++) {
+            if (has_prompt)
+                printf("[%04d]: ", i);
+            switch (formato) {
+                case  1: printf("%d ", ram[i]); break;
+                case  4: printf("@%08o ", ram[i]); break;
+                case  8: printf("%%%08X ", ram[i]); break;
+                // case 16: printf("%c ", ram[i] & 0xFF); break;
+                default:
+                    registro[10] & 0x10 ? printf("%c ", ram[i] & 0xFF) : printf(" ");
+                    registro[10] & 0x08 ? printf("%%%08X ", ram[i]) : printf(" ");
+                    registro[10] & 0x04 ? printf("@%08o ", ram[i]) : printf(" ");
+                    registro[10] & 0x01 ? printf("%d ", ram[i]) : printf(" ");
+                    break;
+            }
+            if (has_end)
+                printf("\n");
+        }
     }
 }
 
@@ -711,7 +717,7 @@ int dir_mem_abs_indirecto(int valorOp, int *registro, int *segfault) {
     // printf("codeop = %d, offset = %d, base = %d\n", code_seg, offset, base);
     if (offset >= (registro[code_seg] >> 16))
         *segfault = 1;
-    return (base + offset);
+    return base + offset;
 }
 
 // un operando
