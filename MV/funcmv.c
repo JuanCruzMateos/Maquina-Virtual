@@ -321,23 +321,25 @@ void sys_write(int *ram, int *registro) {
     int has_prompt = (registro[10] & 0x800) == 0;
     int has_end    = (registro[10] & 0x100) == 0;
     int formato    = registro[10] & 0x1F;
+    int ini = (registro[registro[13] >> 16] & 0xFFFF) + (registro[13] & 0xFFFF);
     int i;
 
     // if (has_prompt)
         // printf("[%04d]: ", registro[13] & 0xFFFF);
-    for (i = (registro[13] & 0xFFFF); i < (registro[13] & 0xFFFF) + registro[12]; i++) {
+    // for (i = (registro[13] & 0xFFFF); i < (registro[13] & 0xFFFF) + registro[12]; i++) {
+    for (i = ini; i < ini + registro[12]; i++) {
         if (has_prompt)
             printf("[%04d]: ", i);
         switch (formato) {
-            case  1: printf("%d", ram[i + (registro[0] & 0xFFFF)]); break;
-            case  4: printf("@%08o", ram[i + (registro[0] & 0xFFFF)]); break;
-            case  8: printf("%%%08X", ram[i + (registro[0] & 0xFFFF)]); break;
-            case 16: printf("%c", ram[i + (registro[0] & 0xFFFF)] & 0xFF); break;
+            case  1: printf("%d", ram[i]); break;
+            case  4: printf("@%08o", ram[i]); break;
+            case  8: printf("%%%08X", ram[i]); break;
+            case 16: printf("%c", ram[i] & 0xFF); break;
             default:
-                registro[10] & 0x10 ? printf("%c ", ram[i + (registro[0] & 0xFFFF)] & 0xFF) : printf(" ");
-                registro[10] & 0x08 ? printf("%%%08X ", ram[i + (registro[0] & 0xFFFF)]) : printf(" ");
-                registro[10] & 0x04 ? printf("@%08o ", ram[i + (registro[0] & 0xFFFF)]) : printf(" ");
-                registro[10] & 0x01 ? printf("%d ", ram[i + (registro[0] & 0xFFFF)]) : printf(" ");
+                registro[10] & 0x10 ? printf("%c ", ram[i] & 0xFF) : printf(" ");
+                registro[10] & 0x08 ? printf("%%%08X ", ram[i]) : printf(" ");
+                registro[10] & 0x04 ? printf("@%08o ", ram[i]) : printf(" ");
+                registro[10] & 0x01 ? printf("%d ", ram[i]) : printf(" ");
                 break;
         }
         if (has_end)
