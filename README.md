@@ -7,9 +7,9 @@
 * Juan Cruz Mateos  
 
 ## Pasos a seguir para ejecutar el codigo.
-* Requerimientos:
-    - Necesitan instalar numpy 
+* Requerimientos (traductor):
     - Python (3.6 o superior)
+    - Numpy 
 
 * Traductor:
 ```
@@ -18,7 +18,7 @@ python main.py fibo.asm fibo.bin [-o]
 
 * Maquina Virtual - Compilar: 
 ```
-gcc -o mvx.exe mvx.c funcmv.c hastable.c
+gcc -o mvx.exe mvx.c funcmv.c hashtable.c
 ```
 * Maquina Virtual - Ejecutar: 
 ```
