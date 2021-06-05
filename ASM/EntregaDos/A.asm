@@ -7,8 +7,8 @@ strC  equ "Torre C"
 torreA equ 0
 torreB equ 1
 torreC equ 2
-strAUX    equ 1    
-; ubicación de los str 
+str    equ 1 
+; ubicación de los str    
 step   equ 4
         mov     [step], 0
         ldh     2
@@ -32,7 +32,7 @@ step   equ 4
         mov     cx, 1
         mov     ax, %801
         sys     %1
-        mov     cx, strAUX
+        mov     cx, str
         ; Ubico los nombres de las torres
         ldh     3
         ldl     strA 
@@ -111,7 +111,7 @@ print:  push    bp
         mov     ax, %901
         sys     %2
         mov     dx, [bp+desde]
-        add     dx, strAUX
+        add     dx, str
         mov     dx, [dx]
         mov     ax, %900
         mov     bx, 1
@@ -123,7 +123,7 @@ print:  push    bp
         mov     bx, 1
         sys     %4
         mov     dx, [bp+hasta]
-        add     dx, strAUX
+        add     dx, str
         mov     dx, [dx]
         mov     ax, %800
         mov     bx, 1

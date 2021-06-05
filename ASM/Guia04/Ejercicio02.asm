@@ -3,7 +3,7 @@
 
         mov     ax, 0
         mov     dx, 10
-        mov     cx, 30
+        mov     cx, 10
         sys     %3
         
         push    10      ; origen
@@ -20,7 +20,6 @@ copy:   push    bp
         push    ax      ; origen
         push    bx      ; destino
 
-        sys     15
         mov     ax, [bp+3]
         mov     bx, [bp+2]
 

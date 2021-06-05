@@ -118,7 +118,7 @@ def abrirAsmFile(nombreArchivo: str) -> list:
     """
     Devuelve una lista de str con las lineas del archivo.
     """
-    f = open(nombreArchivo, "r")
+    f = open(nombreArchivo, "rt", encoding="utf-8")
     programa = f.read()
     programaEnLineas = programa.split("\n")
     f.close()

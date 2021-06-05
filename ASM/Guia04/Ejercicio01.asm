@@ -24,7 +24,6 @@
 pot:        push    bp
             mov     bp, sp
             push    bx
-            sys     15
             cmp     [bp+2], 0   ; if (base != 0)
             jnz     sigo
             mov     ax, 1

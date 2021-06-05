@@ -22,6 +22,7 @@ typedef struct {
     int segfault;
     int stack_overflow;
     int stack_underflow;
+    int step;
 } memoria_t;
 
 typedef enum { DOS_OP_REG_INM, DOS_OP_REG_REG, DOS_OP_REG_DIR, DOS_OP_REG_IND,
@@ -50,6 +51,7 @@ int get_flags(char *argv[], int argc, memoria_t *memoria);
 void print_binary(memoria_t memoria);
 operacion decodificar_operacion(int instruccion_hex);
 void disassembler(int *ram, int *registro);
+void sys_breakpoint(int *ram, int *registro, flags_t flags, int *step);
 int dir_mem_abs_indirecto(int valorOp, int *registro, int *segfault);
 
 // dos operandos

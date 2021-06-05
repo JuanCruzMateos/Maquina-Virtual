@@ -1,4 +1,4 @@
-; \\ASM DATA=1 EXTRA=0 STACK=70
+\\ASM DATA=1 EXTRA=0 STACK=70
 buffer  equ     0
     mov     dx, buffer
     mov     cx, 1
@@ -12,7 +12,7 @@ buffer  equ     0
     sys     %2
     sys     %2
     sys     %F
-    pop     ax
+;     pop     ax        ; stack-underflow
     stop
 fibo:   push    bp
         mov     bp, sp         

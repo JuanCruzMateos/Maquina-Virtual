@@ -51,6 +51,7 @@ void load_cs(FILE *arch, memoria_t *memoria) {
     memoria->segfault = 0;
     memoria->stack_overflow = 0;
     memoria->stack_underflow = 0;
+    memoria->step = 0;
 }
 
 int get_flags(char *argv[], int argc, memoria_t *memoria) {
@@ -122,10 +123,12 @@ int valor_operando_a(int instruccion_hex, int cant_op, int tipo) {
     else {
         if (cant_op == 1) {
             valor = instruccion_hex & 0xFFFF;
-            if (tipo == 3)
+            if (tipo == 3) {
                 valor &= 0x0FFF;
-            else
+                valor |= valor & 0x800 ? 0xFFFFF000 : 0x0; 
+            } else {
                 valor |= valor & 0x8000 ? 0xFFFF0000 : 0x0;
+            }
         } else {
             valor = (instruccion_hex >> 12) & 0xFFF;
             valor |= valor & 0x800 ? 0xFFFFF000 : 0x0; 
@@ -409,7 +412,7 @@ void disassembler(int *ram, int *registro) {
     print_registros(registro);
 }
 
-void sys_breakpoint(int *ram, int *registro, flags_t flags) {
+void sys_breakpoint(int *ram, int *registro, flags_t flags, int *step) {
     static int saltear_bp = 0;
     char buffer[30];
     char *nums;
@@ -417,6 +420,7 @@ void sys_breakpoint(int *ram, int *registro, flags_t flags) {
 
     fflush(stdin);
     if (!saltear_bp) {     
+        *step = 0;
         // if (flags.c)
         //     system("cls");
         if (flags.d)
@@ -436,6 +440,8 @@ void sys_breakpoint(int *ram, int *registro, flags_t flags) {
                     n2 = n1;
                 for (i = n1; i <= n2; i++)
                     printf("[%04d]: %04X %04X %6d\n", i, (ram[i] & 0xFFFF0000) >> 16, ram[i] & 0xFFFF, ram[i]);
+            } else {
+                *step = 1;
             }
         }
     }
@@ -734,7 +740,7 @@ void SYS(int *a, int *b, memoria_t *mem) {
             break;
         case  6: es_free(mem->ram, mem->registro); break;
         case  7: system("cls"); break;
-        case 15: sys_breakpoint(mem->ram, mem->registro, mem->flags); break;
+        case 15: sys_breakpoint(mem->ram, mem->registro, mem->flags, &(mem->step)); break;
     }
 }
 
