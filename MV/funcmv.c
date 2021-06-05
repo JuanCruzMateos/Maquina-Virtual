@@ -328,7 +328,7 @@ void sys_write(int *ram, int *registro) {
 
     if (formato == 16) {
         if (has_prompt)
-            printf("[%04d]: ", i);
+            printf("[%04d]: ", ini);
         for (i = ini; i < ini + registro[12]; i++)
             printf("%c", ram[i] & 0xFF);
         if (has_end)
@@ -710,18 +710,24 @@ int dir_mem_abs_indirecto(int valorOp, int *registro, int *segfault) {
     // printf("%08X\n", valorOp);
     // printf("registro = %d, offset = %d\n\n", valorOp & 0xF, valorOp >> 4);
 
-    // me quedo con la parte alta del registro -> segmento al cual quiero acceder
-    code_seg = registro[valorOp & 0xF] >> 16;
-    // printf("%d\n", code_seg);
-    // busco donde empieza ese segmento
-    base = registro[code_seg] & 0xFFFF;
-    // printf("%d\n", base);
-    // calculo es offset = parte baja del registro + offset instruccion
-    offset = (registro[valorOp & 0xF] & 0xFFFF) + (valorOp >> 4);
-    // printf("%d\n", offset);
-
+    if ((valorOp & 0xF) == 0) {
+        // pertenece al DS
+        base = registro[0] & 0xFFFF;
+        offset = valorOp >> 4;
+        code_seg = 0;
+    } else {
+        // me quedo con la parte alta del registro -> segmento al cual quiero acceder
+        code_seg = registro[valorOp & 0xF] >> 16;
+        // printf("%d\n", code_seg);
+        // busco donde empieza ese segmento
+        base = registro[code_seg] & 0xFFFF;
+        // printf("%d\n", base);
+        // calculo es offset = parte baja del registro + offset instruccion
+        offset = (registro[valorOp & 0xF] & 0xFFFF) + (valorOp >> 4);
+        // printf("%d\n", offset);
+    }
     // printf("codeop = %d, offset = %d, base = %d\n", code_seg, offset, base);
-    if (offset >= (registro[code_seg] >> 16))
+    if (offset > (registro[code_seg] >> 16))
         *segfault = 1;
     return base + offset;
 }
@@ -733,11 +739,9 @@ void SYS(int *a, int *b, memoria_t *mem) {
         case  2: sys_write(mem->ram, mem->registro); break;
         case  3: str_read(mem->ram, mem->registro); break;
         case  4: str_write(mem->ram, mem->registro); break;
-        case  5:
-            if (mem->registro[4] == -1)
-                init_heap(mem->ram, mem->registro);
-            es_new(mem->ram, mem->registro); 
-            break;
+        case  5: if (mem->registro[4] == -1) init_heap(mem->ram, mem->registro);
+                 es_new(mem->ram, mem->registro); 
+                 break;
         case  6: es_free(mem->ram, mem->registro); break;
         case  7: system("cls"); break;
         case 15: sys_breakpoint(mem->ram, mem->registro, mem->flags, &(mem->step)); break;

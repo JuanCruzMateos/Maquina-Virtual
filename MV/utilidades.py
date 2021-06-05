@@ -344,63 +344,109 @@ def devuelveTipoOperandoYValorDecimal(operando: str, numLinea: int):
     return 0, cambioBase(operando, numLinea)
 
 
-# TODO nuevo: interpreta valor del operando indirecto
-# TODO MEJORAR
+# # TODO nuevo: interpreta valor del operando indirecto
+# def valorOperandoIndirecto(operando, numLinea):
+#     """
+#     Devuelve el valor del operando indirecto.
+#     """
+#     # re.split('[\+-]', 'BX+100')
+#     # print("operando antes de split en valorOperandoIndirecto", operando)
+#     operando = ''.join(operando.split())
+#     operando = operando.replace('[','').replace(']','')
+#     # print("operando antes de split en valorOperandoIndirecto desoues de split" ,operando.upper())
+#     if len(operando) == 2:
+#         reg = registros[operando.upper()]
+#         offset = 0
+#     else:
+#         etiqueta = False
+#         positivo = False
+#         if "+" in operando:
+#             positivo = True
+#             operando = operando.split("+")
+#         elif "-" in operando:
+#             operando = operando.split("-")
+#         else:
+#             etiqueta = True
+
+#         if etiqueta:
+#             return saltos[operando.upper()]
+#         else:
+#             if positivo:
+#                 if operando[0].upper() in registros:
+#                     reg = registros[operando[0].upper()]
+#                     if operando[1].upper() in saltos:
+#                         offset = saltos[operando[1].upper()]
+#                     else:
+#                         offset = int(operando[1])
+#                 elif operando[0].upper() in saltos:
+#                     offset = saltos[operando[0].upper()] + int(operando[1])
+#             else:
+#                 if operando[0].upper() in registros:
+#                     reg = registros[operando[0].upper()]
+#                     if operando[1].upper() in saltos:
+#                         offset = saltos[operando[1].upper()]
+#                     else:
+#                         offset = (-1 * int(operando[1]))
+#                 elif operando[0].upper() in saltos:
+#                     offset = saltos[operando[0].upper()] - int(operando[1])
+                    
+#         # reg = registros[operando[:2].upper()]
+#         # if operando[3:].upper() in saltos:
+#         #     offset = saltos[operando[3:].upper()]
+#         #     if operando[2] == '-':
+#         #         offset *= -1
+#         # elif operando[3:].isnumeric():
+#         #     offset = int(operando[2:])
+#         # else:
+#         #     errores[numLinea] = 4
+#         #     return -1
+#         # print((offset << 4) | reg)
+#     return (offset << 4) | reg
+
+
 def valorOperandoIndirecto(operando, numLinea):
     """
     Devuelve el valor del operando indirecto.
     """
-    # re.split('[\+-]', 'BX+100')
-    # print("operando antes de split en valorOperandoIndirecto", operando)
-    operando = ''.join(operando.split())
-    operando = operando.replace('[','').replace(']','')
-    # print("operando antes de split en valorOperandoIndirecto desoues de split" ,operando.upper())
-    if len(operando) == 2:
-        reg = registros[operando.upper()]
-        offset = 0
-    else:
-        etiqueta = False
-        positivo = False
-        if "+" in operando:
-            positivo = True
-            operando = operando.split("+")
-        elif "-" in operando:
-            operando = operando.split("-")
-        else:
-            etiqueta = True
 
-        if etiqueta:
-            return saltos[operando.upper()]
+    def analizarOp(unOperando: str, numlinea: int) -> tuple:
+        """
+        Funcion aux -> evito repetir codigo
+        """
+        reg = 0
+        offset = 0
+        if unOperando.isnumeric():
+            offset = int(unOperando)
+        elif unOperando.upper() in registros:
+            reg = registros[unOperando.upper()]
+        elif unOperando.upper() in saltos:
+            offset = saltos[unOperando.upper()]
         else:
-            if positivo:
-                if operando[0].upper() in registros:
-                    reg = registros[operando[0].upper()]
-                    if operando[1].upper() in saltos:
-                        offset = saltos[operando[1].upper()]
-                    else:
-                        offset = int(operando[1])
-                elif operando[0].upper() in saltos:
-                    offset = saltos[operando[0].upper()] + int(operando[1])
-            else:
-                if operando[0].upper() in registros:
-                    reg = registros[operando[0].upper()]
-                    if operando[1].upper() in saltos:
-                        offset = saltos[operando[1].upper()]
-                    else:
-                        offset = (-1 * int(operando[1]))
-                elif operando[0].upper() in saltos:
-                    offset = saltos[operando[0].upper()] - int(operando[1])
-        # reg = registros[operando[:2].upper()]
-        # if operando[3:].upper() in saltos:
-        #     offset = saltos[operando[3:].upper()]
-        #     if operando[2] == '-':
-        #         offset *= -1
-        # elif operando[3:].isnumeric():
-        #     offset = int(operando[2:])
-        # else:
-        #     errores[numLinea] = 4
-        #     return -1
-        # print((offset << 4) | reg)
+            errores[numlinea] = 1
+        return reg, offset
+
+    operando = operando.replace('[', '').replace(']', '')
+    operando = ''.join(operando.split())
+    index_plus_sign  = operando.find("+")
+    index_minus_sign = operando.find("-")
+    if index_minus_sign == -1 and index_plus_sign == -1:
+        reg, offset = analizarOp(operando, numLinea)
+    else:
+        if index_plus_sign != -1:
+            operando = operando.split('+')
+        else:
+            operando = operando.split('-')
+        operando = operando[0].upper(), operando[1].upper()
+        # primer operando
+        reg0, offset0 = analizarOp(operando[0], numLinea)
+        # segundo operando
+        reg1, offset1 = analizarOp(operando[1], numLinea)
+        # junto
+        reg = reg0 + reg1
+        if index_minus_sign == -1:
+            offset = offset0 + offset1
+        else:
+            offset = offset0 - offset1
     return (offset << 4) | reg
 
 

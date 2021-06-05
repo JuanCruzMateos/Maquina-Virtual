@@ -8,18 +8,18 @@ prompt    equ   "Ingresar operacion en notacion polaca inversa: numeros y signo 
 operacion equ   "Operacion: "
 resultado equ   "Resultado: "
 
-                ldh     3
+                ldh     3           ; escribo prompt
                 ldl     prompt
                 mov     ax, %800
                 mov     dx, ac
                 sys     4
 
-                mov     ax, %900
+                mov     ax, %900    ; operacion: ...
                 ldl     operacion
                 mov     dx, ac
                 sys     4
 
-                mov     dx, 0
+                mov     dx, 0       ; string read
                 mov     cx, 15
                 sys     3
 
@@ -28,15 +28,18 @@ resultado equ   "Resultado: "
                 call    polaca
                 add     sp, 2
 
-                ldh     3
+                ldh     3           ; print Resultado...
                 ldl     resultado
                 mov     ax, %900
                 mov     dx, ac
                 sys     4
 
-                mov     ax, %800
+                mov     ax, %800    ; print res
                 mov     dx, 50
                 sys     4
+
+                ; mov     dx, 0
+                ; sys     4
                 stop
 
 ; Especificacion:
@@ -46,13 +49,23 @@ resultado equ   "Resultado: "
 ;   add     sp, 2
 polaca:         push    bp
                 mov     bp, sp
-                push    ax    ; parseInt devuelve en ax
-                push    bx     ; tipo
-                push    cx     ; act
+                push    ax          ; parseInt devuelve en ax
+                push    bx          ; tipo
+                push    cx          ; act
+                push    dx          ; new
                 push    ex
                 push    fx
 
-                mov     cx, [bp+3]
+                ; mov     cx, [bp+3]
+                
+                ; uso el ES para crear una copia del String para no modificar el original
+                mov     ax, [bp+3]
+                slen    cx, [ax]
+                add     cx, 1       ; para el \0
+                sys     %5          ; devuelve en DX ptr
+                mov     cx, dx
+                smov    [cx], [ax]
+                sys     15
 
 ciclo:          cmp     [cx], 0
                 jz      finPolaca
@@ -66,11 +79,13 @@ ciclo:          cmp     [cx], 0
                 mov     ex, cx      ; guardo el inicio
 iter:           cmp     [cx], ' '
                 jz      cont
+                cmp     [cx], 0
+                jz      cont
                 add     cx, 1
                 jmp     iter
 
 cont:           mov     [cx], 0
-                push    bx
+                push    ex
                 call    parseInt
                 add     sp, 1
                 push    ax
@@ -100,8 +115,10 @@ sig:            add     cx, 1
 finPolaca:      push    [bp+2]
                 call    parseStr
                 add     sp, 2
+                sys     %6
                 pop     fx
                 pop     ex
+                pop     dx
                 pop     cx
                 pop     bx
                 pop     ax
