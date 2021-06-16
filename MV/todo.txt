@@ -1,0 +1,3 @@
+ - problemas con algunos equs -> e.g. "-"
+ - cmp con ',' se reemplaza con ' '
+ - [ARREGLO] debe tomarse como operando directo no indirecto -> revisar en utilidades.py

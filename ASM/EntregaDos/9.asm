@@ -12,7 +12,7 @@ buffer  equ     0
     sys     %2
     sys     %2
     sys     %F
-;     pop     ax        ; stack-underflow
+    pop     ax
     stop
 fibo:   push    bp
         mov     bp, sp         

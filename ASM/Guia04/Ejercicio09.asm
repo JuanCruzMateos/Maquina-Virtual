@@ -1,9 +1,9 @@
+; 9. Idem el ejercicio anterior pero el usuario carga una lista de palabras separadas por comas.
+
+
 ; 8. Cargar palabras en un vector hasta que se lea una palabra vacía y ordenarlas alfabéticamente.
 ;    Nota: considerar palabras de 20 caracteres como máximo.
-
-separador equ "--------"
-prompt  equ "Ingrese palabras (enter para terminar): "
-nullptr equ "NullPointerException"
+prompt  equ "Ingrese palabras separadas por comas (enter para terminar): "
 vector  equ  100
 maxlen  equ  21
 ; maxlen = 20 + 1 -> para el \0, sino el caracter 20 sera el \0
@@ -14,71 +14,92 @@ maxlen  equ  21
                 mov     dx, ac
                 sys     4
 
-                xor     fx, fx       ; var i
-loadVector:     mov     dx, 0
-                mov     cx, maxlen
-                sys     %3
-                cmp     [0], 0
-                jz      ordenar
+                mov     dx, 20
+                mov     cx, 80
+                sys     3
+                ; sys     4
 
-                slen    bx, [0]
-                add     bx, 1
-                mov     cx, bx
-                sys     %5
-                cmp     dx, -1
-                jz      sinmem
-                mov     [fx+vector], dx
-                mov     bx, dx
-                smov    [bx], [0]
-                add     fx, 1 
-                jmp     loadVector
+                push    99
+                push    vector
+                push    20
+                call    cargarVector
+                add     sp, 3
 
-ordenar:        cmp     fx, 0
+                ; mov     dx, 99
+                ; mov     cx, 1
+                ; mov     ax, %001
+                ; sys     2
+ordenar:        cmp     [99], 0
                 jz      fin
+                mov     fx, [99]
                 push    fx
                 push    vector
                 call    selectionSort
                 add     sp, 2
 
-mostrar:       push    fx
+mostrar:        push    fx
                 push    vector
                 call    printVec
                 add     sp, 2
                 jmp     fin
-
-sinmem:         ldh     3
-                ldl     nullptr
-                mov     ax, %800
-                mov     dx, ac
-                sys     4
 fin:            stop
 
-; Especificacion :: cargarVector ::  void cargarVector(int *vec, int *n)
+; Especificacion :: cargarVector ::  void cargarVector(char *str, int *vec, int *n)
 ;   push    < ptr a n -> dim logica >
 ;   push    < ptr a vec >
-;   call    selectionSort
-;   add     sp, 2
-; cargarVector:   push    bp
-;                 mov     bp, sp
-;                 push    cx
-;                 push    dx
-;                 push    fx
+;   push    < ptr a str >
+;   call    cargarVector
+;   add     sp, 3
+cargarVector:   push    bp
+                mov     bp, sp
+                push    ax
+                push    bx
+                push    cx
+                push    dx
+                push    ex
+                push    fx
+                push    ac
 
-;                 mov     cx, maxlen
-;                 sys     %5
-;                 cmp     dx, -1
-;                 jz      finCargarVec
-;                 mov     fx, dx
+                sys     %f
+                mov     ax, [bp+3]      ; vec
+                mov     bx, [bp+4]      ; *n
+                mov     ex, [bp+2]      ; *str
+                
+                slen    ac, [ex]
+                add     ac, 1
+                add     ac, ex
+                xor     [bx], [bx]
+                mov     fx, ex
+ciclo:          cmp     ex, ac
+                jp      finCargarVec
+iter:           cmp     [fx], 0
+                jz      finstr
+                cmp     [fx], 44    ; 44 == ','
+                jz      comma
+                add     fx, 1
+                jmp     iter
 
-;                 mov     dx, fx
-;                 mov     cx, maxlen
-;                 sys     3
-
-;                 cmp     
-
-
-
-; finCargarVec:   
+comma:          mov     [fx], 0
+finstr:         mov     cx, maxlen
+                add     cx, 1
+                sys     5
+                smov    [dx], [ex]
+                mov     [ax], dx
+                add     ax, 1
+                add     [bx], 1
+                add     fx, 1
+                mov     ex, fx
+                jmp     ciclo
+finCargarVec:   pop     ac
+                pop     fx
+                pop     ex
+                pop     dx
+                pop     cx
+                pop     bx
+                pop     ax
+                mov     sp, bp
+                pop     bp
+                ret
 
 
 ; Especificacion :: selectionSort ::  void selection_sort(char **vec, int n)
@@ -156,7 +177,6 @@ printVec:       push    bp
                 push    bx
                 push    dx
                 push    fx
-                push    ac
 
                 xor     bx, bx
                 mov     fx, [bp+2]
@@ -168,13 +188,8 @@ iterPrint:      cmp     bx, [bp+3]
                 add     bx, 1
                 add     fx, 1
                 jmp     iterPrint
-; finPrint:       ldh     3
-;                 ldl     separador
-;                 mov     dx, ac
-;                 mov     ax, %800
-;                 sys     4
-finPrint:       pop     ac
-                pop     fx
+
+finPrint:       pop     fx
                 pop     dx
                 pop     bx
                 pop     ax

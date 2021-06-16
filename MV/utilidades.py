@@ -2,6 +2,8 @@ import re
 import numpy as np
 
 # colores para terminal
+
+
 class Colors:
     RED = '\033[91m'
     YELLOW = '\033[93m'
@@ -9,39 +11,40 @@ class Colors:
     NOUNDERLINE = '\033[24m'
     RESETCOLOR = '\033[39m'
 
+
 # mnem : [codigo, nro operandos]
 hashmap = {
-    'MOV' : [0, 2],
-    'ADD' : [1, 2],
-    'SUB' : [2, 2],
+    'MOV': [0, 2],
+    'ADD': [1, 2],
+    'SUB': [2, 2],
     'SWAP': [3, 2],
-    'MUL' : [4, 2],
-    'DIV' : [5, 2],
-    'CMP' : [6, 2],
-    'SHL' : [7, 2],
-    'SHR' : [8, 2],
-    'AND' : [9, 2],
-    'OR'  : [10, 2],
-    'XOR' : [11, 2],
+    'MUL': [4, 2],
+    'DIV': [5, 2],
+    'CMP': [6, 2],
+    'SHL': [7, 2],
+    'SHR': [8, 2],
+    'AND': [9, 2],
+    'OR': [10, 2],
+    'XOR': [11, 2],
     'SLEN': [12, 2],
     'SMOV': [13, 2],
     'SCMP': [14, 2],
-    'SYS' : [240, 1],
-    'JMP' : [241, 1],
-    'JZ'  : [242, 1],
-    'JP'  : [243, 1],
-    'JN'  : [244, 1],
-    'JNZ' : [245, 1],
-    'JNP' : [246, 1],
-    'JNN' : [247, 1],
-    'LDL' : [248, 1],
-    'LDH' : [249, 1],
-    'RND' : [250, 1],
-    'NOT' : [251, 1],
+    'SYS': [240, 1],
+    'JMP': [241, 1],
+    'JZ': [242, 1],
+    'JP': [243, 1],
+    'JN': [244, 1],
+    'JNZ': [245, 1],
+    'JNP': [246, 1],
+    'JNN': [247, 1],
+    'LDL': [248, 1],
+    'LDH': [249, 1],
+    'RND': [250, 1],
+    'NOT': [251, 1],
     'PUSH': [252, 1],
-    'POP' : [253, 1],
+    'POP': [253, 1],
     'CALL': [254, 1],
-    'RET' : [4080, 0],
+    'RET': [4080, 0],
     'STOP': [4081, 0]
 }
 
@@ -66,10 +69,10 @@ registros = {
 }
 
 headers = {
-    'DATA' : 1024,
+    'DATA': 1024,
     'STACK': 1024,
     'EXTRA': 1024,
-    'CODE' : 1024
+    'CODE': 1024
 }
 
 base = {
@@ -100,7 +103,7 @@ comentarios = {
 
 # TODO: nuevos errores -> simbolo duplicado y no se encuentra simbolo
 tipos_errores = [
-    "Error sintaxis: Mnemotico desconocido.", 
+    "Error sintaxis: Mnemotico desconocido.",
     "No se encuentra rotulo.",
     "Cantidad de operandos erronea.",
     "Simbolo duplicado.",
@@ -133,12 +136,12 @@ def conviertoLineasEnListas(programaEnLineas: list) -> list:
     nroLinea = 0
     programaEnListas = []
     for lineas in programaEnLineas:
-        linea = lineas.replace(',',' ').split()
+        linea = lineas.replace(',', ' ').split()
         # lista vacia [] se evalua como False, la salteo
         if linea and linea[0][0] != ';':
             if linea[0][0] == '\\':
                 procesarDirectiva(linea)
-            elif len(linea) > 1  and linea[1].upper() == "EQU":
+            elif len(linea) > 1 and linea[1].upper() == "EQU":
                 guardarConstante(linea)
             else:
                 linea = buscoRotuloYComentario(linea, nroLinea)
@@ -159,7 +162,7 @@ def buscoRotuloYComentario(linea: list, nroLinea: int) -> list:
         rotulo = rotulo.replace(':', '').upper()
         if rotulo in strings or rotulo in saltos:
             errores[nroLinea] = 3
-        else:    
+        else:
             saltos[rotulo] = nroLinea
             etiqueta[nroLinea] = rotulo
     # Ahora busco comentarios
@@ -211,20 +214,24 @@ def guardarConstante(linea: list):
     else:
         # print(valor)
         baseOp = valor[0]
-        if baseOp == '"' or baseOp[0] == "'":
-            valorOp = valor.replace('"','').replace("'","")
+        if valor == '" "':
+            strings[const] = [" ", -1]
+        elif baseOp == '"' or baseOp[0] == "'":
+            valorOp = valor.replace('"', '').replace("'", "")
             # print(valorOp)
             if len(valorOp) < 3:
-                errores[-3] = 6 # simbolo invalido
-            else:    
+                errores[-3] = 6  # simbolo invalido
+            else:
                 strings[const] = [valorOp, -1]
         elif baseOp in base and baseOp != "'":
             valorOp = int(valor[1:], base[baseOp])
             saltos[const] = valorOp
-        else: 
+        else:
             errores[-3] = 6
 
 # TODO nuevo: determina pos de strings en DS y actualiza headers
+
+
 def valorConstStrings(programaEnListas):
     """
     Determina las ubicacion en el DS de cada string.
@@ -285,6 +292,7 @@ def decodificoLinea(linea: list, numLinea: int) -> tuple:
             elif linea[-3] == "'" and linea[-2] == "'":
                 operandos = ["' '", linea[4]]
             else:
+                # mejorar -> espacios variables en indirectos
                 if "[" in linea and "]" in linea:
                     ini = linea.index("[")
                     fin = linea.index("]")
@@ -335,7 +343,12 @@ def devuelveTipoOperandoYValorDecimal(operando: str, numLinea: int):
     if re.search("\\[", operando):
         ini = operando.index("[")
         fin = operando.index("]")
-        if re.search("(?i)[A-H]|[X]|[B]|[P]|[S]", operando) == None or re.search("[%#@]", operando) != None:
+        # nuevo
+        aux = operando.replace('[', '').replace(']', '').upper()
+        if aux in saltos:
+            return 2, saltos[aux]
+        # nuevo
+        elif re.search("(?i)[A-H]|[X]|[B]|[P]|[S]", operando) == None or re.search("[%#@]", operando) != None:
             return 2, cambioBase(operando[ini+1:fin], numLinea)
         else:
             return 3, valorOperandoIndirecto(operando, numLinea)
@@ -344,75 +357,12 @@ def devuelveTipoOperandoYValorDecimal(operando: str, numLinea: int):
     return 0, cambioBase(operando, numLinea)
 
 
-# # TODO nuevo: interpreta valor del operando indirecto
-# def valorOperandoIndirecto(operando, numLinea):
-#     """
-#     Devuelve el valor del operando indirecto.
-#     """
-#     # re.split('[\+-]', 'BX+100')
-#     # print("operando antes de split en valorOperandoIndirecto", operando)
-#     operando = ''.join(operando.split())
-#     operando = operando.replace('[','').replace(']','')
-#     # print("operando antes de split en valorOperandoIndirecto desoues de split" ,operando.upper())
-#     if len(operando) == 2:
-#         reg = registros[operando.upper()]
-#         offset = 0
-#     else:
-#         etiqueta = False
-#         positivo = False
-#         if "+" in operando:
-#             positivo = True
-#             operando = operando.split("+")
-#         elif "-" in operando:
-#             operando = operando.split("-")
-#         else:
-#             etiqueta = True
-
-#         if etiqueta:
-#             return saltos[operando.upper()]
-#         else:
-#             if positivo:
-#                 if operando[0].upper() in registros:
-#                     reg = registros[operando[0].upper()]
-#                     if operando[1].upper() in saltos:
-#                         offset = saltos[operando[1].upper()]
-#                     else:
-#                         offset = int(operando[1])
-#                 elif operando[0].upper() in saltos:
-#                     offset = saltos[operando[0].upper()] + int(operando[1])
-#             else:
-#                 if operando[0].upper() in registros:
-#                     reg = registros[operando[0].upper()]
-#                     if operando[1].upper() in saltos:
-#                         offset = saltos[operando[1].upper()]
-#                     else:
-#                         offset = (-1 * int(operando[1]))
-#                 elif operando[0].upper() in saltos:
-#                     offset = saltos[operando[0].upper()] - int(operando[1])
-                    
-#         # reg = registros[operando[:2].upper()]
-#         # if operando[3:].upper() in saltos:
-#         #     offset = saltos[operando[3:].upper()]
-#         #     if operando[2] == '-':
-#         #         offset *= -1
-#         # elif operando[3:].isnumeric():
-#         #     offset = int(operando[2:])
-#         # else:
-#         #     errores[numLinea] = 4
-#         #     return -1
-#         # print((offset << 4) | reg)
-#     return (offset << 4) | reg
-
-
 def valorOperandoIndirecto(operando, numLinea):
     """
     Devuelve el valor del operando indirecto.
     """
 
     def analizarOp(unOperando: str, numlinea: int) -> tuple:
-        """
-        Funcion aux -> evito repetir codigo
-        """
         reg = 0
         offset = 0
         if unOperando.isnumeric():
@@ -427,7 +377,7 @@ def valorOperandoIndirecto(operando, numLinea):
 
     operando = operando.replace('[', '').replace(']', '')
     operando = ''.join(operando.split())
-    index_plus_sign  = operando.find("+")
+    index_plus_sign = operando.find("+")
     index_minus_sign = operando.find("-")
     if index_minus_sign == -1 and index_plus_sign == -1:
         reg, offset = analizarOp(operando, numLinea)
@@ -472,7 +422,7 @@ def cambioBase(operando, numLinea):
     # opcion 2 --> que sea una etiqueta
     else:
         baseOperando = 500  # es una etiqueta
-    
+
     if baseOperando != 500:
         if baseOperando == "ASCII":
             valor = ord(operandoAux)
@@ -493,9 +443,11 @@ def cambioBase(operando, numLinea):
 
 def generaValorCodificado(codMnemonico, cantidadOperandos, tipoOperandos, operandos, numLinea):
     if cantidadOperandos == 2:
-        codigo = operacion2Parametros(codMnemonico, operandos[0], operandos[1], tipoOperandos[0], tipoOperandos[1], numLinea)
+        codigo = operacion2Parametros(
+            codMnemonico, operandos[0], operandos[1], tipoOperandos[0], tipoOperandos[1], numLinea)
     elif cantidadOperandos == 1:
-        codigo = operacion1Parametro(codMnemonico, operandos[0], tipoOperandos[0], numLinea)
+        codigo = operacion1Parametro(
+            codMnemonico, operandos[0], tipoOperandos[0], numLinea)
     else:
         codigo = operacion0Parametros(codMnemonico)
     return codigo
@@ -507,15 +459,17 @@ def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, t
     if type(operando1) == list:
         operando1 = operando1[1]
     if operando1 & 0xFFF != operando1:
-        print(Colors.YELLOW + Colors.UNDERLINE + "Warning" + Colors.NOUNDERLINE + ": truncado de operando en linea " + str(numLinea) + "." + Colors.RESETCOLOR)
+        print(Colors.YELLOW + Colors.UNDERLINE + "Warning" + Colors.NOUNDERLINE +
+              ": truncado de operando en linea " + str(numLinea) + "." + Colors.RESETCOLOR)
     if operando2 & 0xFFF != operando2:
-        print(Colors.YELLOW + Colors.UNDERLINE + "Warning" + Colors.NOUNDERLINE + ": truncado de operando en linea " + str(numLinea) + "." + Colors.RESETCOLOR)
+        print(Colors.YELLOW + Colors.UNDERLINE + "Warning" + Colors.NOUNDERLINE +
+              ": truncado de operando en linea " + str(numLinea) + "." + Colors.RESETCOLOR)
     codigo = np.left_shift(codigoOperacion & 0x00F, 28, dtype=np.int64)
     tipoA = np.left_shift(tipoOperando1, 26, dtype=np.int64)
     a = np.left_shift(operando1 & 0xFFF, 12, dtype=np.int64)
     tipoB = np.left_shift(tipoOperando2 & 0x003, 24, dtype=np.int64)
     b = operando2 & 0xFFF
-    codigoFull = codigo | tipoA | tipoB | a | b 
+    codigoFull = codigo | tipoA | tipoB | a | b
     return codigoFull
 
 
@@ -524,7 +478,8 @@ def operacion1Parametro(codigoOperacion, operando1, tipoOperando1, numLinea):
     if type(operando1) == list:
         operando1 = operando1[1]
     if operando1 & 0xFFFF != operando1:
-        print(Colors.YELLOW + Colors.UNDERLINE + "Warning:" + Colors.NOUNDERLINE + " truncado de operando en linea " + str(numLinea) + "." + Colors.RESETCOLOR)
+        print(Colors.YELLOW + Colors.UNDERLINE + "Warning:" + Colors.NOUNDERLINE +
+              " truncado de operando en linea " + str(numLinea) + "." + Colors.RESETCOLOR)
     unos = 15 << 28
     codigo = (codigoOperacion & 0x00F) << 24
     tipoA = tipoOperando1 << 22
@@ -576,7 +531,8 @@ def generoListasDeStrings(codigos, programaFull):
             coment = ";" + comentarios[i]
         else:
             coment = ""
-        lineaDeTexto = lineaEnHexa+" "+codigoEnHexa+" "+lin+" "+mnemonico+" "+ope+" "+ " " * 6 +coment
+        lineaDeTexto = lineaEnHexa+" "+codigoEnHexa+" " + \
+            lin+" "+mnemonico+" "+ope+" " + " " * 6 + coment
         megaTexto += lineaDeTexto + "\n"
         texto.append(lineaDeTexto)
     return texto, megaTexto

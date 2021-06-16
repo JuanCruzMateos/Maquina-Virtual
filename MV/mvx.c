@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
                     func(&(memoria.ram[mem_absA]), NULL, &memoria);
                 break;
         }
-        if (memoria.step && op.codigo_op != 0xF0 && op.valor_a != 0xF) {
+        if (memoria.step /* && op.codigo_op != 0xF0 && op.valor_a != 0xF */ ) {
             sys_breakpoint(memoria.ram, memoria.registro, memoria.flags, &(memoria.step));
         }
     }

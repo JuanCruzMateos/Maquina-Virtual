@@ -142,7 +142,6 @@ pruebas0 = [myStr5, myStr7, myStr8, myStr9]
 # print("reg = ",reg)
 # print("valor = ",valor)
 
-
 def valorOperandoIndirecto(operando, numLinea):
     """
     Devuelve el valor del operando indirecto.

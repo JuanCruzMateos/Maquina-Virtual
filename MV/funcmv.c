@@ -315,9 +315,11 @@ void sys_read(int *ram, int *registro) {
 }
 
 // verificar si el caracter es imprimible
-// int printable(int x) {
-//     return 32 <= x && x <= 126;
-// }
+int printable(int x) {
+    if (32 <= x && x <= 126)
+        return x;
+    return 46;
+}
 
 void sys_write(int *ram, int *registro) {
     int has_prompt = (registro[10] & 0x800) == 0;
@@ -439,7 +441,7 @@ void sys_breakpoint(int *ram, int *registro, flags_t flags, int *step) {
                 else
                     n2 = n1;
                 for (i = n1; i <= n2; i++)
-                    printf("[%04d]: %04X %04X %6d\n", i, (ram[i] & 0xFFFF0000) >> 16, ram[i] & 0xFFFF, ram[i]);
+                    printf("[%04d]: %04X %04X %c %d\n", i, (ram[i] & 0xFFFF0000) >> 16, ram[i] & 0xFFFF, printable(ram[i]), ram[i]);
             } else {
                 *step = 1;
             }
@@ -863,15 +865,15 @@ void SLEN(int *a, int *b, memoria_t *mem) {
     int longitud = 0;
 
     while (*b != 0) {
-        b++;
         longitud++;
+        b++;
     }
     *a = longitud;
 }
 
 
 void SMOV(int *a, int *b, memoria_t *mem) {
-
+    // while (*a++ = *b++) ;
     while (*b != 0) {
         *a = *b;
         b++;
@@ -881,16 +883,12 @@ void SMOV(int *a, int *b, memoria_t *mem) {
 }
 
 void SCMP(int *a, int *b, memoria_t *mem) {
-    int iguales = 0;
+    int finstr = 0;
 
-    while (iguales == 0 && !(*b == 0 && *a == 0)) {
-        if (*b - *a > 0) {
-            iguales = 1;
-        } else if (*b - *a < 0) {
-            iguales = -1;
-        }
-        b++;
+    while (*a == *b && !finstr) {
+        finstr = *a == 0;
         a++;
+        b++;
     }
-    modificar_CC(iguales,mem->registro);
+    modificar_CC(finstr ? 0 : *a - *b, mem->registro);
 }
