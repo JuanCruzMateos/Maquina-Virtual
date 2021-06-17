@@ -82,12 +82,12 @@ base = {
     "'": "ASCII"
 }
 
-# TODO: nuevo
+
 strings = {
     # tag: [string, #mem]
 }
 
-# TODO: ahora guarda ctes no string tambien
+
 # rotulos y constantes no string comparten la misma tabla; string se tratan aparte por simplicidad
 saltos = {
     # rotulo: nroLinea
@@ -101,7 +101,7 @@ comentarios = {
     # nroLinea(int): comentario(str)
 }
 
-# TODO: nuevos errores -> simbolo duplicado y no se encuentra simbolo
+
 tipos_errores = [
     "Error sintaxis: Mnemotico desconocido.",
     "No se encuentra rotulo.",
@@ -128,7 +128,6 @@ def abrirAsmFile(nombreArchivo: str) -> list:
     return programaEnLineas
 
 
-# TODO: nuevo -> procesa constantes y directivas \\ASM
 def conviertoLineasEnListas(programaEnLineas: list) -> list:
     """
     Devuelve una lista de listas, cada una con mnem y op en str.
@@ -151,7 +150,6 @@ def conviertoLineasEnListas(programaEnLineas: list) -> list:
     return programaEnListas
 
 
-# TODO: verifica que el rotulo no este repetido y que no sea una const
 def buscoRotuloYComentario(linea: list, nroLinea: int) -> list:
     """
     Elimina comentarios y rotulos agregandolos a sus correspondientes dict.
@@ -179,7 +177,6 @@ def buscoRotuloYComentario(linea: list, nroLinea: int) -> list:
     return linea
 
 
-# TODO nuevo: interpreta directiva \\ASM
 def procesarDirectiva(linea: list):
     """
     Recive una lista con la linea,ej: ['\\ASM', 'DATA=10', 'EXTRA=3000', 'STACK=5000'].
@@ -193,7 +190,6 @@ def procesarDirectiva(linea: list):
             errores[-2] = 5
 
 
-# TODO nuevo: guarda const
 def guardarConstante(linea: list):
     """
     Decodifica la constante a guardar ubicandola en saltos (misma tabla que rotulos -> evitar suplicados)
@@ -229,8 +225,6 @@ def guardarConstante(linea: list):
         else:
             errores[-3] = 6
 
-# TODO nuevo: determina pos de strings en DS y actualiza headers
-
 
 def valorConstStrings(programaEnListas):
     """
@@ -251,7 +245,6 @@ def quitarComas(linea: list) -> list:
             linea[i] = linea[i].replace(',', '')
 
 
-# TODO: nuevo -> antes de procesar la lista final analizo los strings para que a que posision del DS le corresponden
 def generoListaFinal(programaEnListas):
     """
     Devuelve una lista de tuplas con la linea decodificada.
@@ -332,7 +325,6 @@ def generoCodigo(programaFinal):
     return codigos
 
 
-# TODO: agrega consideracion para operando indirecto
 def devuelveTipoOperandoYValorDecimal(operando: str, numLinea: int):
     # verificamos si el operando es un registro
     # devuelve tipo = 1 y valor del registro
@@ -473,7 +465,6 @@ def operacion2Parametros(codigoOperacion, operando1, operando2, tipoOperando1, t
     return codigoFull
 
 
-# TODO completo ceros si es de tipo indirecto (tipo == 3)
 def operacion1Parametro(codigoOperacion, operando1, tipoOperando1, numLinea):
     if type(operando1) == list:
         operando1 = operando1[1]
@@ -498,7 +489,6 @@ def operacion0Parametros(codigoOperacion):
     return codigoFull
 
 
-# TODO: esto si es una duda: mostrar \\ASM y EQU ??? o saltear ?
 # en una lina hay un rotulo duplicado muestro un -Err-
 def generoListasDeStrings(codigos, programaFull):
     texto = []
@@ -538,7 +528,6 @@ def generoListasDeStrings(codigos, programaFull):
     return texto, megaTexto
 
 
-# TODO nuevo: agregar headers antes de hacer el np array
 def agregarInfoHeaders(arr: list):
     """
     Agregar headers al arreglo antes de convertilo en numpy arr.
@@ -550,7 +539,6 @@ def agregarInfoHeaders(arr: list):
     arr.insert(4, headers["CODE"])
 
 
-# TODO nuevo: agrego strings al DS antes del numpy array
 def agregarStringsDS(arr: list):
     """
     Agregar strings al CS, un char por celda + '\0'.

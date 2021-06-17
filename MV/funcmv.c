@@ -314,7 +314,6 @@ void sys_read(int *ram, int *registro) {
     }
 }
 
-// verificar si el caracter es imprimible
 int printable(int x) {
     if (32 <= x && x <= 126)
         return x;
@@ -698,19 +697,10 @@ void es_free(int *ram, int *registro) {
     }
 }
 
-// TODO -> validar que no haga segmentation fault
-// TODO -> valodar SEGMENTATION FAULT con operandos INDIRECTOS y DIRECTOS
 int dir_mem_abs_indirecto(int valorOp, int *registro, int *segfault) {
     int code_seg;
     int base;
     int offset;
-
-    // printf("valor op = %08X\n", valorOp);
-    // OBS: el error esta en aplicar la mascara 0xFFF -> cuando es un -1 me lo toma como FF y, plt, como 255 
-    //      dando un seg Fault
-    // valorOp = (valorOp & 0xFFF);
-    // printf("%08X\n", valorOp);
-    // printf("registro = %d, offset = %d\n\n", valorOp & 0xF, valorOp >> 4);
 
     if ((valorOp & 0xF) == 0) {
         // pertenece al DS
@@ -812,7 +802,6 @@ void STOP(int *a, int *b, memoria_t *mem) {
 
 void PUSH(int *a, int *b, memoria_t *mem) {
     // si SPL es cero --> pila llena (verifico antes de restar el registro)
-    // printf("PUSH -> sp = %d, bp = %d\n", mem->registro[6] &  0xFFFF, mem->registro[7] & 0xFFFF);
     if ((mem->registro[6] & 0x0000FFFF) == 0) {
         // TODO -> terminar proceso --> como lo hacemos? es void
         mem->stack_overflow = 1;
@@ -828,11 +817,7 @@ void PUSH(int *a, int *b, memoria_t *mem) {
 
 void POP(int *a, int *b, memoria_t *mem) {
     // Si SPL + SSL >= SSH --> pila vacia --> stack-underflow
-    // printf("POP -> sp = %d, bp = %d\n", mem->registro[6] & 0xFFFF, mem->registro[7] & 0xFFFF);
     if ((mem->registro[6] & 0x0000FFFF) /*+ (mem->registro[1] & 0x0000FFFF))*/ >= ((mem->registro[1] & 0xFFFF0000)>>16)) {
-        // TODO --> terminar proceso --> como lo hacemos? es void
-        // printf("%d\n", mem->registro[6] & 0x0000FFFF);
-        // printf("%d\n", mem->registro[6] & 0x0000FFFF);
         mem->stack_underflow = 1;
     } else {
         // guardamos en *a el dato guardado en la direccion de memoria SSL + SPL
