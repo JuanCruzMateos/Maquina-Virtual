@@ -95,7 +95,7 @@ getPermisos:            push    [bp+5]          ; id usuario
 
                         mov     fx, [bp+7]      ; & ptr a lista
                         mov     cx, 3           ; resevo tres celdas consecutivas
-                        sys     %5
+                        sys     %5              ; asumo que hay memoria disponible
                         mov     [dx], [bx]      ; N : id
                         mov     [dx+1], [bx+2]  ; N+1: ptr nombre
                         mov     [dx+2], [fx]    ; N+2: ptr sig
