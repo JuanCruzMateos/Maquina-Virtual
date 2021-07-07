@@ -4,3 +4,8 @@
 ; llegar a destino) cuando resulte posible llegar a la ciudad destino , o escriba “No hay camino” en
 ; caso de resultar una ciudad no terminal.
 
+vecVis equ 100
+null    equ    -1
+
+
+main:       
