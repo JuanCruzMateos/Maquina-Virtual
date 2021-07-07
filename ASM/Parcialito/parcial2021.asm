@@ -14,9 +14,9 @@
 ;   add   sp, 6
 
 ; Especificacion: lista
-;  N : id 
-; N+1: ptr nombre
-; N+2: ptr siguente
+;  N  | id 
+; N+1 | ptr nombre
+; N+2 | ptr siguente
 
 ; Especificacion: hasPermisoEjecucion
 ;   
